@@ -87,7 +87,7 @@ void loop() {
     if (input == "GetTC2Temp") {
       Serial.println(temps[1]);
     }
-    if (input = "GetTC1Status") {
+    if (input == "GetTC1Status") {
       if (fault_bytes[0] == 0){
         Serial.println("Good");
       }
@@ -103,7 +103,7 @@ void loop() {
       }
     }
 
-    if (input = "GetTC2Status") {
+    if (input == "GetTC2Status") {
       if (fault_bytes[1] == 0){
         Serial.println("Good");
       }

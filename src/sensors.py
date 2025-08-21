@@ -15,6 +15,7 @@ class sensors:
         self.leak = None
         self.TCtemps = [None, None]
         self.TCfaults = [None, None]
+        self.dewpoint = None
 
     def connect(self):
         self.ser = serial.Serial(self.port, self.baud, timeout=self.timeout)
@@ -92,3 +93,8 @@ class sensors:
         self.get_TCfaults()
         self.get_TCtemps()
         
+    def get_dewpoint(self):
+        self.rH = self.get_rH()
+        self.ambtemp = self.get_ambtemp()
+        self.dewpoint = self.ambtemp - (100 - self.rH)/5
+        return self.dewpoint

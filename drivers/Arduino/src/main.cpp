@@ -14,7 +14,6 @@ float temps[NUM_PROBES];
 uint8_t fault_bytes[NUM_PROBES];
 
 // Status Flags for TC (stored as 8 bit binary number, 1 = faulted)
-/*
 const char* fault_names[] = {
 	"Open Circuit",   // bit 0
 	"TC Voltage OOR", // bit 1
@@ -25,7 +24,7 @@ const char* fault_names[] = {
 	"TC Temp OOR",    // bit 6
 	"CJ Temp OOR",    // bit 7
 };
-*/
+
 
 // Declare pin numbers
 const int door_pin = 2;
@@ -51,15 +50,15 @@ void setup() {
 
 void loop() {
 
+  dht.read();
   float ambient_temperature = dht.getTemperature();
   float humidity = dht.getHumidity();
-  bool check = dht.isConnected();
-  dht.read();
+  bool dhtstatus = dht.isConnected();
 
   for (int i=0; i<NUM_PROBES; i++) {
     tcs[i].sample();
     temps[i] = tcs[i].getTemperature();
-    fault_bytes[i] = tcs[i].getStatus(); 
+    fault_bytes[i] = tcs[i].getStatus();
   }
 
   int door_state = digitalRead(door_pin); // 1 = closed
@@ -73,7 +72,7 @@ void loop() {
     if (input == "GetAmbTemp") {
       Serial.println(ambient_temperature);
     }
-    if (input == "GetHumid") {
+    if (input == "GetrH") {
       Serial.println(humidity);
     }
     if (input == "GetLeak") {
@@ -89,23 +88,45 @@ void loop() {
       Serial.println(temps[1]);
     }
     if (input = "GetTC1Status") {
-      Serial.println(fault_bytes[0]);
+      if (fault_bytes[0] == 0){
+        Serial.println("Good");
+      }
+      else {
+        Serial.print("Faulted,");
+        for (int i = 0; i < 8; i++) {
+          if (fault_bytes[0] & (1 << i)) {
+            Serial.print(fault_names[i]);
+            Serial.print(",");
+          }
+        }
+        Serial.println();
+      }
     }
+
     if (input = "GetTC2Status") {
-      Serial.println(fault_bytes[1]);
+      if (fault_bytes[1] == 0){
+        Serial.println("Good");
+      }
+      else {
+        Serial.print("Faulted,");
+        for (int i = 0; i < 8; i++) {
+          if (fault_bytes[1] & (1 << i)) {
+            Serial.print(fault_names[i]);
+            Serial.print(",");
+          }
+        }
+        Serial.println();
+      }
+    }
+    
+    if (input == "GetDHTStatus") {
+      Serial.println(dhtstatus);
     }
 
-    
-    if (input == "CheckCalibrate") {
-      if (check == false) {
-        dht.begin();
-        Serial.println("0");
-      }
-
-      if (check == true) {
-        Serial.println("1");
-      }
-
+    if (input == "RestartDHT") {
+      dht.begin();
+      dht.read();
+      Serial.println(dht.isConnected());
     }
 
   }

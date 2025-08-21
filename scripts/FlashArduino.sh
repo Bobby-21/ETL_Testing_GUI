@@ -2,8 +2,6 @@
 # Arduino Uno Flash Script using PlatformIO
 # Usage: source FlashArduino.sh
 
-set -e
-
 PROJECT_DIR="$HOME/ETL_Testing_GUI/drivers/Arduino/"
 
 cd "$PROJECT_DIR"

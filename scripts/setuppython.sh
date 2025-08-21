@@ -3,8 +3,6 @@
 # Python Project Setup Script using uv sync
 # Usage: source setup.sh
 
-set -e
-
 echo "Setting up Python project with uv..."
 
 # Check and install uv if needed

@@ -26,6 +26,12 @@ class sensors:
             self.ser.close()
         else:
             raise RuntimeError("Serial not open, call connect() first")
+        
+    def check_serial_connected(self):
+        if self.ser and self.ser.is_open:
+            return True
+        else:
+            return False
     
     def send(self, cmd):
         if self.ser and self.ser.is_open:
@@ -76,3 +82,13 @@ class sensors:
         response = self.send("RestartDHT")
         self.dhtstatus = bool(response)
         return self.dhtstatus
+    
+    def update_all(self):
+        self.get_ambtemp()
+        self.get_dhtstatus()
+        self.get_rH()
+        self.get_door()
+        self.get_leak()
+        self.get_TCfaults()
+        self.get_TCtemps()
+        

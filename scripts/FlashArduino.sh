@@ -6,6 +6,12 @@ PROJECT_DIR="$HOME/ETL_Testing_GUI/drivers/Arduino/"
 
 cd "$PROJECT_DIR"
 
+# Check and install curl if needed
+if ! command -v curl >/dev/null 2>&1; then
+    echo "Installing curl..."
+    sudo apt install -y curl
+fi
+
 # Check and install PlatformIO if needed
 if ! command -v pio >/dev/null 2>&1; then
     echo "Installing PlatformIO..."

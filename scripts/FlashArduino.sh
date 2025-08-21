@@ -16,7 +16,8 @@ fi
 if ! command -v pio >/dev/null 2>&1; then
     echo "Installing PlatformIO..."
     curl -fsSL get-platformio.py https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py
-    export PATH=$PATH:~/.platformio/penv/bin
+    python3 get-platformio.py
+    export PATH=$PATH:~/.local/bin
 fi
 
 # Install dependencies

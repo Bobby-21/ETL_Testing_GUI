@@ -2,6 +2,7 @@
 # Arduino Uno Flash Script using PlatformIO
 # Usage: source FlashArduino.sh
 
+CURR_DIR= "$PWD"
 PROJECT_DIR="$HOME/ETL_Testing_GUI/drivers/Arduino/"
 
 cd "$PROJECT_DIR"
@@ -28,3 +29,4 @@ echo "Building and uploading..."
 pio run --target upload
 
 echo "Arduino programmed successfully!"
+cd "$CURR_DIR"

@@ -66,7 +66,7 @@ void loop() {
   
 
   if (Serial.available() > 0) {
-    String input = Serial.readString();
+    String input = Serial.readStringUntil('\n');
     input.trim();
 
     if (input == "GetAmbTemp") {

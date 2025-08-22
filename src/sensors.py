@@ -1,8 +1,8 @@
 import serial
 import time
 
-class sensors:
-    def __init__(self, port, baudrate = 115200, timeout = 1.0):
+class Sensors:
+    def __init__(self, port, baudrate, timeout):
         self.port = port
         self.baud = baudrate
         self.timeout = timeout
@@ -76,13 +76,19 @@ class sensors:
     
     def get_dhtstatus(self):
         response = self.send("GetDHTStatus")
-        self.dhtstatus = bool(response)
+        self.dhtstatus = bool(int(response))
         return self.dhtstatus
 
     def restart_dht(self):
         response = self.send("RestartDHT")
         self.dhtstatus = bool(response)
         return self.dhtstatus
+        
+    def get_dewpoint(self):
+        self.rH = self.get_rH()
+        self.ambtemp = self.get_ambtemp()
+        self.dewpoint = self.ambtemp - (100 - self.rH)/5
+        return self.dewpoint
     
     def update_all(self):
         self.get_ambtemp()
@@ -92,9 +98,17 @@ class sensors:
         self.get_leak()
         self.get_TCfaults()
         self.get_TCtemps()
-        
-    def get_dewpoint(self):
-        self.rH = self.get_rH()
-        self.ambtemp = self.get_ambtemp()
-        self.dewpoint = self.ambtemp - (100 - self.rH)/5
-        return self.dewpoint
+        self.get_dewpoint()
+    
+    def package(self):
+        data = {
+            "Ambient Temperature": self.ambtemp, 
+            "Relative Humidity": self.rH,
+            "DHT Status": self.dhtstatus,
+            "Door Status": self.door,
+            "Leak Status": self.leak,
+            "TC Temperatures": self.TCtemps,
+            "TC Faults": self.TCfaults,
+            "Dewpoint": self.dewpoint
+        }
+        return data

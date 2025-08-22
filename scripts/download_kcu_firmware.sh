@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Get version from command line argument
+version=${1:-"v3.2.3"}
 
 # Check and install dependencies
 for tool in curl jq wget unzip; do
@@ -36,4 +38,5 @@ source ~/.bashrc
 
 cd "$HOME/ETL_Testing_GUI/drivers/KCU/"
 
-get_firmware_zip v3.2.3
+echo "Downloading firmware version: $version"
+get_firmware_zip $version

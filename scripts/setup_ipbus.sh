@@ -2,8 +2,6 @@
 
 cd "$HOME"
 
-set -e
-
 echo "Updating..."
 sudo apt update -y
 

@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -e
 
 # Check and install dependencies
 for tool in curl jq wget unzip; do

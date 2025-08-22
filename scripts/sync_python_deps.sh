@@ -10,7 +10,7 @@ echo "Setting up Python project with uv..."
 # Check and install curl if needed
 if ! command -v curl >/dev/null 2>&1; then
     echo "Installing curl..."
-    sudo apt install curl
+    sudo apt install -y curl
 fi
 
 # Check and install uv if needed

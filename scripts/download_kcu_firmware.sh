@@ -38,5 +38,11 @@ source ~/.bashrc
 
 cd "$HOME/ETL_Testing_GUI/drivers/KCU/"
 
-echo "Downloading firmware version: $version"
-get_firmware_zip $version
+# Check if firmware folder already exists
+firmware_folder="etl_test_fw-$version"
+if [ -d "$firmware_folder" ]; then
+    echo "Firmware folder '$firmware_folder' already exists. Skipping download."
+else
+    echo "Downloading firmware version: $version"
+    get_firmware_zip $version
+fi

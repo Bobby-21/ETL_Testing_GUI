@@ -1,23 +1,29 @@
 #!/bin/bash
 
-cd "$HOME"
+CONTROLHUB="/opt/cactus/bin/controlhub_start"
 
-echo "Updating..."
-sudo apt update -y
+if [[ -x "$CONTROLHUB" ]]; then
+    echo "Controlhub present, skipping install"
+else
+    cd "$HOME"
 
-echo "Upgrading..."
-sudo apt upgrade -y
+    echo "Updating..."
+    sudo apt update -y
 
-echo "Installing git and python3.8..."
-sudo apt install -y git python3.8
+    echo "Upgrading..."
+    sudo apt upgrade -y
 
-echo "Installing packages for ipbus software..."
-sudo apt-get install -y make erlang g++ libboost-all-dev libpugixml-dev python3-all-dev rsyslog
+    echo "Installing git..."
+    sudo apt install -y git
 
-echo "Cloning ipbus repo"
-git clone --depth=1 -b v2.8.3 --recurse-submodules https://github.com/ipbus/ipbus-software.git
-cd ipbus-software
+    echo "Installing packages for ipbus software..."
+    sudo apt-get install -y make erlang g++ libboost-all-dev libpugixml-dev python3-all-dev rsyslog
 
-echo "Making"
-sudo make PYTHON=python3
-sudo make install PYTHON=python3
+    echo "Cloning ipbus repo"
+    git clone --depth=1 -b v2.8.3 --recurse-submodules https://github.com/ipbus/ipbus-software.git
+    cd ipbus-software
+
+    echo "Making"
+    sudo make PYTHON=python3
+    sudo make install PYTHON=python3
+fi

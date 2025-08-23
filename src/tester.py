@@ -1,23 +1,29 @@
 import threading
-import serial
-import time
+import subprocess
+from pathlib import Path
 
-tester_stop_evt = threading.Event()
-
-# FIX: KCU IP and other things should be in json config?
-# Still need to figure out how udev rules will play here
-def start_testing():
-
-    tester_stop_evt.clear()
-    testing_thread = threading.Thread(target=test, args=(), daemon=True)
-    testing_thread.start()
-
-    return testing_thread
-
-def stop_testing(thread):
-    tester_stop_evt.set()
-    if thread:
-        thread.join(timeout=1)
+def run_uv_script(script_path, test_name, kcu_ip, moduleid, qinj, charges):
+    if test_name == "tamalero":
+        cmd = ["uv", "run", "python3", script_path, "--", "--kcu", kcu_ip, "--power_up"]
+        subprocess.run(cmd)
+    elif test_name == "module" and qinj == True:
+        cmd = ["uv", "run", "python3", script_path, "--", "--kcu", kcu_ip, "--test_chip", "--moduleid", moduleid, "--qinj", "--charges", charges]
+        subprocess.run(cmd)
+    elif test_name == "module" and qinj == False:
+        cmd = ["uv", "run", "python3", script_path, "--", "--kcu", kcu_ip, "--test_chip", "--moduleid", moduleid]
+        subprocess.run(cmd)
 
 
-# Still figuring out how to talk to tamalero
+# KCU IP should be in a config somewhere
+def thread_target(test_name, kcu_ip, moduleid, qinj, charges):
+    if test_name == "tamalero":
+        script_path = Path(__file__).parent.parent / "module_test_sw" / "test_tamalero.py"
+        run_uv_script(script_path, test_name, kcu_ip, moduleid, qinj, charges)
+    elif test_name == "module":
+        script_path = Path(__file__).parent.parent / "module_test_sw" / "test_module.py"
+        run_uv_script(script_path, test_name, kcu_ip, moduleid, qinj, charges)
+
+def initiate_test(test_name, kcu_ip, moduleid, qinj=False, charges = [10,20,30]):
+    t = threading.Thread(target=thread_target, args=(test_name, kcu_ip, moduleid, qinj, charges), daemon=True)
+    t.start()
+    t.join()

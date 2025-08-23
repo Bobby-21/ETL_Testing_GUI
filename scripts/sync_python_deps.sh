@@ -26,10 +26,3 @@ uv python pin 3.8
 # Use uv sync to create venv and install dependencies in one step
 echo "Syncing project dependencies..."
 uv sync
-
-# Activate the virtual environment
-echo "Activating virtual environment..."
-source .venv/bin/activate
-
-echo "Setup complete! Virtual environment is activated."
-echo "To deactivate later, run: deactivate"

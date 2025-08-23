@@ -18,8 +18,13 @@ if ! command -v uv >/dev/null 2>&1; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
+
 # Setup paths for tamalero
-source "$HOME/ETL_Testing_GUI/module_test_sw/setup.sh"
+cd "$HOME/ETL_Testing_GUI/"
+source "module_test_sw/setup.sh"
+cd "module_test_sw/"
+source "module_test_sw/setup.sh"
+cd ".."
 
 # Recreate uv env with system-site-packages so uHAL becomes visible to env
 rm -rf .venv

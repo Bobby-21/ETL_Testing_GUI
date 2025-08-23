@@ -18,6 +18,11 @@ if ! command -v uv >/dev/null 2>&1; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
+# Recreate uv env with system-site-packages so uHAL becomes visible to env
+rm -rf .venv
+python3.8 -m venv .venv --system-site-packages
+uv python pin 3.8
+
 # Use uv sync to create venv and install dependencies in one step
 echo "Syncing project dependencies..."
 uv sync

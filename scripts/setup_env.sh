@@ -23,7 +23,7 @@ fi
 cd "$HOME/ETL_Testing_GUI/"
 source "module_test_sw/setup.sh"
 cd "module_test_sw/"
-source "module_test_sw/setup.sh"
+source "setup.sh"
 cd ".."
 
 # Recreate uv env with system-site-packages so uHAL becomes visible to env

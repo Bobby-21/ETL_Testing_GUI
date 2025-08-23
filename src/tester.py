@@ -4,13 +4,13 @@ from pathlib import Path
 
 def run_uv_script(script_path, test_name, kcu_ip, moduleid, qinj, charges):
     if test_name == "tamalero":
-        cmd = ["uv", "run", "python3", script_path, "--", "--kcu", kcu_ip, "--power_up"]
+        cmd = ["uv", "run", "python3", script_path, "--kcu", kcu_ip, "--power_up"]
         subprocess.run(cmd)
     elif test_name == "module" and qinj == True:
-        cmd = ["uv", "run", "python3", script_path, "--", "--kcu", kcu_ip, "--test_chip", "--moduleid", moduleid, "--qinj", "--charges", charges]
+        cmd = ["uv", "run", "python3", script_path, "--kcu", kcu_ip, "--test_chip", "--moduleid", moduleid, "--qinj", "--charges", charges]
         subprocess.run(cmd)
     elif test_name == "module" and qinj == False:
-        cmd = ["uv", "run", "python3", script_path, "--", "--kcu", kcu_ip, "--test_chip", "--moduleid", moduleid]
+        cmd = ["uv", "run", "python3", script_path, "--kcu", kcu_ip, "--test_chip", "--moduleid", moduleid]
         subprocess.run(cmd)
 
 

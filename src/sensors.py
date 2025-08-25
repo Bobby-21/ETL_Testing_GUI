@@ -17,6 +17,8 @@ class Sensors:
         self.TCfaults = [None, None]
         self.dewpoint = None
 
+        self.is_connected = False
+
     def connect(self):
         self.ser = serial.Serial(self.port, self.baud, timeout=self.timeout)
         time.sleep(2)
@@ -30,9 +32,11 @@ class Sensors:
         
     def check_serial_connected(self):
         if self.ser and self.ser.is_open:
-            return True
+            self.is_connected = True
+            return self.is_connected
         else:
-            return False
+            self.is_connected = False
+            return self.is_connected
     
     def send(self, cmd):
         if self.ser and self.ser.is_open:
@@ -99,6 +103,7 @@ class Sensors:
         self.get_TCfaults()
         self.get_TCtemps()
         self.get_dewpoint()
+        self.check_serial_connected()
     
     def package(self):
         data = {
@@ -109,6 +114,7 @@ class Sensors:
             "Leak Status": self.leak,
             "TC Temperatures": self.TCtemps,
             "TC Faults": self.TCfaults,
-            "Dewpoint": self.dewpoint
+            "Dewpoint": self.dewpoint,
+            "Connected": self.is_connected
         }
         return data

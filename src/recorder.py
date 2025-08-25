@@ -4,7 +4,7 @@ import time
 import queue
 from sensors import Sensors
 
-data_q = queue.Queue(maxsize=1)
+data_q = queue.Queue(maxsize=10)
 recorder_stop_evt = threading.Event()
 
 # FIX: Sensors object should be initialized with values from json config

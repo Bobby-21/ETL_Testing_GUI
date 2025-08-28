@@ -53,6 +53,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         ambtemp = 24.2  # Placeholder for ambient temperature
@@ -61,6 +62,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
         
         rH = 45.3  # Placeholder for relative humidity
@@ -69,6 +71,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         door_status = "Closed"  # Placeholder for door status
@@ -77,6 +80,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         leak_status = "No Leak"  # Placeholder for leak status
@@ -85,6 +89,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         TC1_temp = 22.5  # Placeholder for TC1 temperature
@@ -93,6 +98,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         TC1_fault = "OK"  # Placeholder for TC1 fault status
@@ -101,6 +107,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         TC2_temp = 23.1  # Placeholder for TC2 temperature
@@ -109,6 +116,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         TC2_fault = "OK"  # Placeholder for TC2 fault status
@@ -117,6 +125,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         dewpoint = 12.3  # Placeholder for dewpoint
@@ -125,6 +134,7 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         dhtstatus = "OK"  # Placeholder for DHT status
@@ -133,22 +143,26 @@ class ArduinoPanel(Panel):
             font-weight: 600;
             color: #eeeeee;
             padding: 10px;
+            font-size: 40px;
         """)
 
         self.subgrid.setColumnStretch(0, 1)
-        self.subgrid.addWidget(self.connect_btn, 1, 1)
-        self.subgrid.addWidget(self.disconnect_btn, 1, 2)
-        self.subgrid.addWidget(self.serialstatus_lbl, 1, 3)
+        self.subgrid.setRowStretch(1, 1)
+        self.subgrid.addWidget(self.connect_btn, 2, 1)
+        self.subgrid.addWidget(self.disconnect_btn, 2, 2)
+        self.subgrid.addWidget(self.serialstatus_lbl, 2, 3)
         self.subgrid.setColumnStretch(4, 1)
+        self.subgrid.setRowStretch(3, 1)
 
-        self.subgrid.addWidget(self.ambtemp_lbl, 2, 3)
-        self.subgrid.addWidget(self.rH_lbl, 3, 3)
-        self.subgrid.addWidget(self.dewpoint_lbl, 2, 4)
-        self.subgrid.addWidget(self.dhtstatus_lbl, 3, 4)
-        self.subgrid.addWidget(self.door_lbl, 4, 3)
-        self.subgrid.addWidget(self.leak_lbl, 4, 4)
-        self.subgrid.addWidget(self.TC1_lbl, 5, 3)
-        self.subgrid.addWidget(self.TC1_fault_lbl, 5, 4)
-        self.subgrid.addWidget(self.TC2_lbl, 6, 3)
-        self.subgrid.addWidget(self.TC2_fault_lbl, 6, 4)
-        self.subgrid.setRowStretch(7, 1)
+        self.subgrid.addWidget(self.ambtemp_lbl, 4, 3)
+        self.subgrid.addWidget(self.rH_lbl, 5, 3)
+        self.subgrid.addWidget(self.dewpoint_lbl, 4, 4)
+        self.subgrid.addWidget(self.dhtstatus_lbl, 5, 4)
+        self.subgrid.addWidget(self.door_lbl, 6, 3)
+        self.subgrid.addWidget(self.leak_lbl, 6, 4)
+        self.subgrid.addWidget(self.TC1_lbl, 7, 3)
+        self.subgrid.addWidget(self.TC1_fault_lbl, 7, 4)
+        self.subgrid.addWidget(self.TC2_lbl, 8, 3)
+        self.subgrid.addWidget(self.TC2_fault_lbl, 8, 4)
+        self.subgrid.setRowStretch(9, 1)
+        self.subgrid.setColumnStretch(5, 1)

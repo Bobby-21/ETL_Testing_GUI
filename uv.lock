@@ -501,6 +501,7 @@ dependencies = [
     { name = "mplhep" },
     { name = "numpy" },
     { name = "pandas" },
+    { name = "pathlib" },
     { name = "pyarrow" },
     { name = "pyqt5", version = "5.15.2", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'win32'" },
     { name = "pyqt5", version = "5.15.11", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'win32'" },
@@ -528,6 +529,7 @@ requires-dist = [
     { name = "mplhep", specifier = "==0.3.26" },
     { name = "numpy", specifier = "==1.24.2" },
     { name = "pandas", specifier = "==1.5.2" },
+    { name = "pathlib", specifier = ">=1.0.1" },
     { name = "pyarrow", specifier = "==11.0.0" },
     { name = "pyqt5", marker = "sys_platform != 'win32'", specifier = ">=5.15.11" },
     { name = "pyqt5", marker = "sys_platform == 'win32'", specifier = "<=5.15.2" },
@@ -1883,6 +1885,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/66/94/68e2e17afaa9169cf6412ab0f28623903be73d1b32e208d9e8e541bb086d/parso-0.8.4.tar.gz", hash = "sha256:eb3a7b58240fb99099a345571deecc0f9540ea5f4dd2fe14c2a99d6b281ab92d", size = 400609, upload-time = "2024-04-05T09:43:55.897Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c6/ac/dac4a63f978e4dcb3c6d3a78c4d8e0192a113d288502a1216950c41b1027/parso-0.8.4-py2.py3-none-any.whl", hash = "sha256:a418670a20291dacd2dddc80c377c5c3791378ee1e8d12bffc35420643d43f18", size = 103650, upload-time = "2024-04-05T09:43:53.299Z" },
+]
+
+[[package]]
+name = "pathlib"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/aa/9b065a76b9af472437a0059f77e8f962fe350438b927cb80184c32f075eb/pathlib-1.0.1.tar.gz", hash = "sha256:6940718dfc3eff4258203ad5021090933e5c04707d5ca8cc9e73c94a7894ea9f", size = 49298, upload-time = "2014-09-03T15:41:57.18Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/78/f9/690a8600b93c332de3ab4a344a4ac34f00c8f104917061f779db6a918ed6/pathlib-1.0.1-py3-none-any.whl", hash = "sha256:f35f95ab8b0f59e6d354090350b44a80a80635d22efdedfa84c7ad1cf0a74147", size = 14363, upload-time = "2022-05-04T13:37:20.585Z" },
 ]
 
 [[package]]

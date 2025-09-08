@@ -11,158 +11,85 @@ class ArduinoPanel(Panel):
     def __init__(self, title="Arduino"):
         super().__init__(title)
 
-        self.connect_btn = QPushButton("Connect")
-        self.connect_btn.setStyleSheet("""
-            QPushButton {
-                background-color: green;
-                color: white;
-                font-weight: bold;
-                border-radius: 6px;
-                padding: 6px 16px;
-            }
-            QPushButton:hover {
-                background-color: #228B22;
-            }
-            QPushButton:pressed {
-                background-color: #006400;
-            }
-        """)
-        self.connect_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        # ---------- styles: white text + green connect button ----------
+        self.setObjectName("arduinoPanel")
+        self.setStyleSheet("""
+        #arduinoPanel, #arduinoPanel QWidget { color: #ffffff; }
+        QLabel { color: #ffffff; }
 
-        self.disconnect_btn = QPushButton("Disconnect")
-        self.disconnect_btn.setStyleSheet("""
-            QPushButton {
-                background-color: red;
-                color: white;
-                font-weight: bold;
-                border-radius: 6px;
-                padding: 6px 16px;
-            }
-            QPushButton:hover {
-                background-color: #d32f2f;
-            }
-            QPushButton:pressed {
-                background-color: #8B0000;
-            }
-        """)
-        self.disconnect_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        QLineEdit, QPlainTextEdit {
+            color: #ffffff;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            padding: 4px 6px;
+            selection-background-color: #2563eb;
+            selection-color: #ffffff;
+        }
 
-        serialstatus = "Disconnected"  # Placeholder for actual status
-        self.serialstatus_lbl = QLabel(f"Serial: {serialstatus}")
-        self.serialstatus_lbl.setStyleSheet("""
+        QPushButton {
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 14px;
             font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
+        }
+        QPushButton:disabled { color: #9aa5b1; }
+
+        QPushButton#greenButton {
+            background-color: #22c55e;
+            color: #ffffff;
+        }
+        QPushButton#greenButton:hover { background-color: #16a34a; }
+        QPushButton#greenButton:pressed { background-color: #15803d; }
         """)
 
-        ambtemp = 24.2  # Placeholder for ambient temperature
-        self.ambtemp_lbl = QLabel(f"Ambient Temp: {ambtemp}°C")
-        self.ambtemp_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
-        
-        rH = 45.3  # Placeholder for relative humidity
-        self.rH_lbl = QLabel(f"Relative Humidity: {rH}%")
-        self.rH_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
+        # ---------- spacer row to avoid overlapping the title ----------
+        top_pad = max(24, self.fontMetrics().height() + 8)
+        self.subgrid.setRowMinimumHeight(0, top_pad)
+        row0 = 1
 
-        door_status = "Closed"  # Placeholder for door status
-        self.door_lbl = QLabel(f"Door: {door_status}")
-        self.door_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
+        # ---------- form: connect/disconnect/status ----------
+        from PyQt5.QtWidgets import QHBoxLayout, QFormLayout
+        form = QFormLayout()
 
-        leak_status = "No Leak"  # Placeholder for leak status
-        self.leak_lbl = QLabel(f"Leak: {leak_status}")
-        self.leak_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
+        self.btn_connect = QPushButton("Connect")
+        self.btn_connect.setObjectName("greenButton")
+        self.btn_disconnect = QPushButton("Disconnect")
+        self.lbl_status = QLabel("Disconnected")
 
-        TC1_temp = 22.5  # Placeholder for TC1 temperature
-        self.TC1_lbl = QLabel(f"TC1 Temp: {TC1_temp}°C")
-        self.TC1_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
+        connect_row = QHBoxLayout()
+        connect_row.addWidget(self.btn_connect)
+        connect_row.addWidget(self.btn_disconnect)
+        connect_row.addWidget(self.lbl_status, 1, Qt.AlignLeft)
 
-        TC1_fault = "OK"  # Placeholder for TC1 fault status
-        self.TC1_fault_lbl = QLabel(f"TC1 Faults: {TC1_fault}")
-        self.TC1_fault_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
+        # ---------- sensor/status labels ----------
+        def make_label(text):
+            lbl = QLabel(text)
+            lbl.setFont(QFont("Arial", 18, QFont.Bold))
+            return lbl
 
-        TC2_temp = 23.1  # Placeholder for TC2 temperature
-        self.TC2_lbl = QLabel(f"TC2 Temp: {TC2_temp}°C")
-        self.TC2_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
+        self.ambtemp_lbl = make_label("Ambient Temp: 24.2°C")
+        self.rH_lbl = make_label("Relative Humidity: 45.3%")
+        self.dewpoint_lbl = make_label("Dew Point: 12.3°C")
+        self.dhtstatus_lbl = make_label("DHT Status: OK")
+        self.door_lbl = make_label("Door: Closed")
+        self.leak_lbl = make_label("Leak: No Leak")
+        self.TC1_lbl = make_label("TC1 Temp: 22.5°C")
+        self.TC1_fault_lbl = make_label("TC1 Faults: OK")
+        self.TC2_lbl = make_label("TC2 Temp: 23.1°C")
+        self.TC2_fault_lbl = make_label("TC2 Faults: OK")
 
-        TC2_fault = "OK"  # Placeholder for TC2 fault status
-        self.TC2_fault_lbl = QLabel(f"TC2 Faults: {TC2_fault}")
-        self.TC2_fault_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
-
-        dewpoint = 12.3  # Placeholder for dewpoint
-        self.dewpoint_lbl = QLabel(f"Dew Point: {dewpoint}°C")
-        self.dewpoint_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
-
-        dhtstatus = "OK"  # Placeholder for DHT status
-        self.dhtstatus_lbl = QLabel(f"DHT Status: {dhtstatus}")
-        self.dhtstatus_lbl.setStyleSheet("""
-            font-weight: 600;
-            color: #eeeeee;
-            padding: 10px;
-            font-size: 40px;
-        """)
-
-        self.subgrid.setColumnStretch(0, 1)
-        self.subgrid.setRowStretch(1, 1)
-        self.subgrid.addWidget(self.connect_btn, 2, 1)
-        self.subgrid.addWidget(self.disconnect_btn, 2, 2)
-        self.subgrid.addWidget(self.serialstatus_lbl, 2, 3)
-        self.subgrid.setColumnStretch(4, 1)
-        self.subgrid.setRowStretch(3, 1)
-
-        self.subgrid.addWidget(self.ambtemp_lbl, 4, 3)
-        self.subgrid.addWidget(self.rH_lbl, 5, 3)
-        self.subgrid.addWidget(self.dewpoint_lbl, 4, 4)
-        self.subgrid.addWidget(self.dhtstatus_lbl, 5, 4)
-        self.subgrid.addWidget(self.door_lbl, 6, 3)
-        self.subgrid.addWidget(self.leak_lbl, 6, 4)
-        self.subgrid.addWidget(self.TC1_lbl, 7, 3)
-        self.subgrid.addWidget(self.TC1_fault_lbl, 7, 4)
-        self.subgrid.addWidget(self.TC2_lbl, 8, 3)
-        self.subgrid.addWidget(self.TC2_fault_lbl, 8, 4)
-        self.subgrid.setRowStretch(9, 1)
-        self.subgrid.setColumnStretch(5, 1)
+        # ---------- layout into subgrid ----------
+        self.subgrid.addLayout(form,       row0 + 0, 0)
+        self.subgrid.addLayout(connect_row,row0 + 1, 0)
+        self.subgrid.addWidget(self.ambtemp_lbl,   row0 + 2, 0)
+        self.subgrid.addWidget(self.rH_lbl,        row0 + 3, 0)
+        self.subgrid.addWidget(self.dewpoint_lbl,  row0 + 4, 0)
+        self.subgrid.addWidget(self.dhtstatus_lbl, row0 + 5, 0)
+        self.subgrid.addWidget(self.door_lbl,      row0 + 6, 0)
+        self.subgrid.addWidget(self.leak_lbl,      row0 + 7, 0)
+        self.subgrid.addWidget(self.TC1_lbl,       row0 + 8, 0)
+        self.subgrid.addWidget(self.TC1_fault_lbl, row0 + 9, 0)
+        self.subgrid.addWidget(self.TC2_lbl,       row0 + 10, 0)
+        self.subgrid.addWidget(self.TC2_fault_lbl, row0 + 11, 0)
+        self.subgrid.setRowStretch(row0 + 11, 1)

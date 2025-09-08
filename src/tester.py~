@@ -1,0 +1,35 @@
+import threading
+import subprocess
+from pathlib import Path
+
+def run_uv_script(script_path, test_name, kcu_ip, moduleid, qinj, charges):
+    cmd = ["uv", "run", "python3", str(script_path), "--kcu", str(kcu_ip)]
+
+    if test_name == "tamalero":
+        cmd += ["--power_up"]
+    elif test_name == "module":
+        cmd += ["--test_chip", "--moduleid", str(moduleid)]
+        if qinj:
+            cmd += ["--qinj"]
+            if charges:
+                cmd += ["--charges", str(charges)]
+
+
+# KCU IP should be in a config somewhere
+def thread_target(test_name, kcu_ip, moduleid, qinj, charges):
+    script_path = Path(__file__).parent.parent / "module_test_sw" / f"test_{test_name}.py"
+    run_uv_script(script_path, test_name, kcu_ip, moduleid, qinj, charges)
+
+
+# test_name: "tamalero" or "module"
+# kcu_ip: IP address of the KCU (e.g., '192.168.0.15')
+# moduleid: ID of the module to test (only for "module" test)
+# qinj: 'True' or 'False' (only for "module" test)
+# charges: list of charges as a string (e.g., '[10,20,30]') (only for "module" test)
+# join: whether to join the thread (default is False)
+def initiate_test(test_name, kcu_ip, moduleid, qinj='False', charges = '[10,20,30]', join=False):
+    t = threading.Thread(target=thread_target, args=(test_name, kcu_ip, moduleid, qinj, charges), daemon=True)
+    t.start()
+    if join:
+        t.join()
+    return t

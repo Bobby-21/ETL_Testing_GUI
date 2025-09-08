@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("ETL Testing GUI")
-        self.setFixedSize(QSize(3000, 2000))
+        self.setFixedSize(QSize(1500, 1000))
         self.setStyleSheet("background-color: #3b3b3b;")
 
         grid = QGridLayout()

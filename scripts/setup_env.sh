@@ -29,8 +29,8 @@ cd ".."
 # Recreate uv env with system-site-packages so uHAL becomes visible to env
 rm -rf .venv
 # python3.8 -m venv .venv --system-site-packages
-uv venv --system-site-packages 
 uv python pin 3.8
+uv venv --system-site-packages 
 
 # Use uv sync to create venv and install dependencies in one step
 echo "Syncing project dependencies..."

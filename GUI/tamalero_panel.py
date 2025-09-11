@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PyQt5.QtWidgets import (
     QWidget, QGridLayout, QHBoxLayout, QVBoxLayout, QFormLayout,
-    QPushButton, QLabel, QLineEdit, QComboBox, QPlainTextEdit, QCheckBox
+    QPushButton, QLabel, QLineEdit, QComboBox, QPlainTextEdit, QCheckBox, QSizePolicy
 )
 from PyQt5.QtCore import Qt, QProcess, QRegularExpression, pyqtSlot, QProcessEnvironment
 from PyQt5.QtGui import QFont, QIntValidator, QRegularExpressionValidator
@@ -106,16 +106,22 @@ class TamaleroPanel(Panel):
         self.log.setPlaceholderText("Logs will appear here…")
 
         # --------- Layout ----------
-        self.subgrid.setRowStretch(0, 0)
-        self.subgrid.setRowStretch(1, 0)
-        self.subgrid.setRowStretch(2, 0)
-        self.subgrid.setRowStretch(3, 0)
-        self.subgrid.setRowStretch(4, 1)
+        self.subgrid.setRowStretch(row0 + 0, 0)  # form
+        self.subgrid.setRowStretch(row0 + 1, 0)  # connect_row
+        self.subgrid.setRowStretch(row0 + 2, 0)  # run_row
+        self.subgrid.setRowStretch(row0 + 3, 0)  # params_widget
+        self.subgrid.setRowStretch(row0 + 4, 1)  # LOG gets the free space
+
         self.subgrid.addLayout(form,            row0 + 0, 0)
         self.subgrid.addLayout(connect_row,     row0 + 1, 0)
         self.subgrid.addLayout(run_row,         row0 + 2, 0)
         self.subgrid.addWidget(self.params_widget, row0 + 3, 0)
         self.subgrid.addWidget(self.log,        row0 + 4, 0)
+
+        # Help the log be “greedy”
+        self.log.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self.log.setMinimumHeight(300)  # optional: bigger default
+        
 
         # --------- Processes ----------
         # Shared unbuffered env for child Python processes

@@ -28,5 +28,4 @@ pio pkg install
 echo "Building and uploading..."
 pio run --target upload
 
-echo "Arduino programmed successfully!"
 cd "$CURR_DIR"

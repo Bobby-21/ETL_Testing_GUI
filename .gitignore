@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# vscode
+.vscode
+
 # KCU firmware
 drivers/KCU/etl_test_fw-*
 drivers/KCU/*.zip

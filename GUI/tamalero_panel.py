@@ -84,11 +84,12 @@ class TamaleroPanel(Panel):
         self.ip_edit.setValidator(QRegularExpressionValidator(ipv4_re))
 
         self.model_edit = QLineEdit()
-        self.model_edit.setPlaceholderText("Model ID (e.g. 204)")
+        self.model_edit.setText("204")
+        # self.model_edit.setPlaceholderText("Module ID (e.g. 204)")
         self.model_edit.setValidator(QIntValidator(0, 10**9))
 
         form.addRow("Chipset IP:", self.ip_edit)
-        form.addRow("Model ID:", self.model_edit)
+        form.addRow("Module ID:", self.model_edit)
 
         # --------- Connect row ----------
         connect_row = QHBoxLayout()

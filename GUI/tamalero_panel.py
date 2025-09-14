@@ -127,9 +127,8 @@ class TamaleroPanel(Panel):
         run_row.addWidget(self.test_combo, 1)
         run_row.addWidget(self.btn_run)
 
-        # --------- Dynamic parameter panel ----------
+        # --------- Dynamic parameter panel (2-column) ----------
         self.params_widget = QWidget()
-        self.params_form = QFormLayout(self.params_widget)
         self._build_params_for("module")
         self.params_widget.setVisible(True)
 
@@ -220,38 +219,68 @@ class TamaleroPanel(Panel):
 
     # ===================== Param builders =====================
 
+    def _set_params_layout(self, layout):
+        """Replace params_widget's layout safely (clean up children)."""
+        old = self.params_widget.layout()
+        if old is not None:
+            def _clear(lay):
+                while lay.count():
+                    it = lay.takeAt(0)
+                    w = it.widget()
+                    if w: w.deleteLater()
+                    sub = it.layout()
+                    if sub:
+                        _clear(sub)
+                        sub.deleteLater()
+            _clear(old)
+            old.deleteLater()
+        self.params_widget.setLayout(layout)
+
     def _clear_params_form(self):
-        while self.params_form.count():
-            item = self.params_form.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
+        # keep for compatibility; we now swap the whole layout
+        self._set_params_layout(QHBoxLayout())
 
     def _build_params_for(self, test_name: str):
-        self._clear_params_form()
         self.param_widgets = {}  # name -> widget
 
+        left  = QFormLayout()
+        right = QFormLayout()
+        for f in (left, right):
+            f.setLabelAlignment(Qt.AlignRight)
+            f.setFormAlignment(Qt.AlignTop)
+            f.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+            f.setHorizontalSpacing(12)
+            f.setVerticalSpacing(8)
+
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(20)
+        row.addLayout(left, 1)
+        row.addLayout(right, 1)
+
         if test_name == "module":
+            # ---------- LEFT: basic ----------
             w_cfg = QLineEdit("modulev2")
-            self.params_form.addRow("configuration:", w_cfg)
+            left.addRow("configuration:", w_cfg)
             self.param_widgets["configuration"] = w_cfg
 
             w_host = QLineEdit("localhost")
-            self.params_form.addRow("host:", w_host)
+            left.addRow("host:", w_host)
             self.param_widgets["host"] = w_host
 
             w_module = QLineEdit("1")
             w_module.setValidator(QIntValidator(0, 9999))
-            self.params_form.addRow("module:", w_module)
+            left.addRow("module:", w_module)
             self.param_widgets["module"] = w_module
 
+            # ---------- RIGHT: qinj/charges/nl1a ----------
             w_qinj = QCheckBox("Enable charge injection (--qinj)")
-            self.params_form.addRow("", w_qinj)
+            right.addRow("", w_qinj)
             self.param_widgets["qinj"] = w_qinj
 
             w_charges = QLineEdit("")
             w_charges.setPlaceholderText("e.g. 10, 20, 30")
-            self.params_form.addRow("charges:", w_charges)
+            right.addRow("charges:", w_charges)
             self.param_widgets["charges"] = w_charges
             w_charges.setEnabled(False)
             w_qinj.toggled.connect(w_charges.setEnabled)
@@ -259,12 +288,13 @@ class TamaleroPanel(Panel):
             w_nl1a = QLineEdit("")
             w_nl1a.setValidator(QIntValidator(1, 10**7))
             w_nl1a.setPlaceholderText("optional (e.g. 320)")
-            self.params_form.addRow("nl1a:", w_nl1a)
+            right.addRow("nl1a:", w_nl1a)     # ← moved to RIGHT column
             self.param_widgets["nl1a"] = w_nl1a
 
         else:
-            info = QLabel("No parameters for this test.")
-            self.params_form.addRow("", info)
+            left.addRow("", QLabel("No parameters for this test."))
+
+        self._set_params_layout(row)
 
     def _on_test_changed(self, name: str):
         self._build_params_for(name)

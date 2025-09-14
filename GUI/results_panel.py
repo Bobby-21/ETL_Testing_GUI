@@ -70,7 +70,7 @@ class ResultsPanel(Panel):
         self.btn_open = QPushButton("Open Folder")
         self.btn_open.setObjectName("greenButton")
         self.btn_open.setEnabled(False)
-        self.btn_plot = QPushButton("Run Summary")
+        self.btn_plot = QPushButton("Make Summary")
         self.btn_plot.setObjectName("blueButton")
         self.btn_plot.setEnabled(False)
 

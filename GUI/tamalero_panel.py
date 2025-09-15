@@ -88,7 +88,7 @@ class TamaleroPanel(Panel):
         # self.model_edit.setPlaceholderText("Module ID (e.g. 204)")
         self.model_edit.setValidator(QIntValidator(0, 10**9))
 
-        form.addRow("Chipset IP:", self.ip_edit)
+        form.addRow("KCU IP:", self.ip_edit)
         form.addRow("Module ID:", self.model_edit)
 
         # --------- Connect row ----------

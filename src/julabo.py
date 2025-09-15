@@ -158,7 +158,7 @@ def main():
         pass
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--device", required=True, help="Serial device (/dev/ttyUSB0, /dev/cu.*)")
+    ap.add_argument("--dev", "--device", required=True, help="Serial device (/dev/ttyUSB0, /dev/cu.*)")
     ap.add_argument("--baud", type=int, default=4800, help="Julabo default baud")
     ap.add_argument("--sample_time", type=float, default=1.0, help="Polling interval (s)")
     args = ap.parse_args()

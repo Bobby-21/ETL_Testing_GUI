@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QTimer, QSize
 from arduino_panel import ArduinoPanel
 from tamalero_panel import TamaleroPanel
 from chiller_panel import ChillerPanel
-from terminal_panel import TerminalPanel
+from results_panel import ResultsPanel
 
 
 class MainWindow(QMainWindow):
@@ -21,7 +21,7 @@ class MainWindow(QMainWindow):
         self.ard = ArduinoPanel()
         self.chill = ChillerPanel()
         self.tam = TamaleroPanel()
-        self.term = TerminalPanel()
+        self.term = ResultsPanel()
 
         # ----- Left column: vertical splitter (Arduino / Chiller) -----
         self.left_split = QSplitter(Qt.Vertical)
@@ -39,9 +39,9 @@ class MainWindow(QMainWindow):
         self.right_split.addWidget(self.term)
         self.right_split.setChildrenCollapsible(False)
         self.right_split.setHandleWidth(6)
-        # 8:2 stretch so resizing keeps the ratio roughly 8:2
-        self.right_split.setStretchFactor(0, 8)
-        self.right_split.setStretchFactor(1, 2)
+        # 8:2 stretch so resizing keeps the ratio roughly 7:3
+        self.right_split.setStretchFactor(0, 7)
+        self.right_split.setStretchFactor(1, 3)
 
         # ----- Main: horizontal splitter (Left column / Right column) -----
         self.main_split = QSplitter(Qt.Horizontal)

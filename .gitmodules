@@ -2,6 +2,3 @@
 	path = module_test_sw
 	url = https://gitlab.cern.ch/cms-etl-electronics/module_test_sw.git
 	branch = origin/dev-RBFv2
-[submodule "drivers/Julabo/julabolib"]
-	path = drivers/Julabo/julabolib
-	url = https://github.com/jopekonk/julabolib.git

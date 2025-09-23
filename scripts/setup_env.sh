@@ -18,7 +18,6 @@ if ! command -v uv >/dev/null 2>&1; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
-
 # Setup paths for tamalero
 cd "$HOME/ETL_Testing_GUI/"
 source "module_test_sw/setup.sh"

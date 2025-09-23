@@ -106,6 +106,7 @@ class Sensors:
         self.check_serial_connected()
     
     def package(self):
+        self.update_all()
         data = {
             "Ambient Temperature": self.ambtemp, 
             "Relative Humidity": self.rH,

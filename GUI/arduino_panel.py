@@ -3,9 +3,13 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QGridLayout, QFrame,
     QPushButton, QLabel, QSizePolicy
 )
+from pathlib import Path
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
 from panel import Panel
+
+MAIN_DIR = Path(__file__).parent.parent
+WORKER_PATH = MAIN_DIR / "src" / "sensors.py"
 
 class ArduinoPanel(Panel):
     def __init__(self, title="Arduino"):

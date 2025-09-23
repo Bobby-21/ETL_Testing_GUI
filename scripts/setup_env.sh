@@ -35,3 +35,7 @@ uv venv --system-site-packages
 # Use uv sync to create venv and install dependencies in one step
 echo "Syncing project dependencies..."
 uv sync
+
+# Install additional dependencies for GUI
+echo "Installing additional dependencies for GUI..."
+sudo apt install libxcb-xinerama0

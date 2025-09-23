@@ -93,6 +93,10 @@ class HVPowerSupply():
         response = self.send_command('MON', self.channel, "STAT")
         return self.parse_response(response)
     
+    def read_polarity(self):
+        response = self.send_command('MON', self.channel, "POL")
+        return self.parse_response(response)
+    
     def wait_ramp(self):
         while True:
             if abs(float(self.read_vmon()['VAL'])-float(self.read_vset()['VAL']))<= self.vtol:

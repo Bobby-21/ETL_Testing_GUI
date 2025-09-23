@@ -116,6 +116,10 @@ class HVPowerSupply():
         n = abs((stop_v - start_v) // step_v) + 1
         voltages = []
         currents = []
+        if self.read_polarity()['VAL'] == '-':
+            pol = -1
+        else:
+            pol = 1
         self.set_current_limit(curr_limit)
         self.set_voltage(start_v)
         self.set_channel_on()
@@ -128,7 +132,7 @@ class HVPowerSupply():
             imon_resp = self.read_imon()
             vmon = self.extract_float_value(vmon_resp)
             imon = self.extract_float_value(imon_resp)
-            voltages.append(vmon)
+            voltages.append(vmon*pol)
             currents.append(imon)
         self.set_channel_off()
         return voltages, currents
@@ -137,8 +141,9 @@ class HVPowerSupply():
         voltages, currents = self.IV_curve(start_v, stop_v, step_v, curr_limit, delay)
         plt.figure()
         plt.plot(voltages, currents, marker='o')
+        plt.gca().invert_xaxis()
         plt.xlabel('Voltage (V)')
-        plt.ylabel('Current (A)')
+        plt.ylabel('Current ($\mu$A)')
         plt.title('I-V Curve')
         plt.grid(True)
         plt.show()

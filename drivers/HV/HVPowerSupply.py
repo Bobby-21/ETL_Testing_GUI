@@ -3,6 +3,7 @@
 import serial
 import time
 import matplotlib.pyplot as plt
+import numpy as np
 
 class HVPowerSupply():
     def __init__(self, port, baud=9600, bd_addr=0, channel=0):
@@ -116,6 +117,7 @@ class HVPowerSupply():
         n = abs((stop_v - start_v) // step_v) + 1
         voltages = []
         currents = []
+        kfactors = []
         if self.read_polarity()['VAL'] == '-':
             pol = -1
         else:
@@ -131,6 +133,7 @@ class HVPowerSupply():
         imon = self.extract_float_value(imon_resp)
         voltages.append(vmon*pol)
         currents.append(imon)
+        kfactors.append(np.nan)
 
         for v in range(1, int(n)):
             volt = start_v + v * step_v
@@ -141,20 +144,37 @@ class HVPowerSupply():
             imon_resp = self.read_imon()
             vmon = self.extract_float_value(vmon_resp)
             imon = self.extract_float_value(imon_resp)
+            if imon>0:
+                kfactor = ((imon-currents[v-1])/(vmon-pol*voltages[v-1]))*(vmon/imon)
+            else:
+                kfactor = np.nan
             voltages.append(vmon*pol)
             currents.append(imon)
+            kfactors.append(kfactor)
         self.set_channel_off()
-        return voltages, currents
+        return voltages, currents, kfactors
     
     def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit, delay=10):
-        voltages, currents = self.IV_curve(start_v, stop_v, step_v, curr_limit, delay)
-        plt.figure()
-        plt.plot(voltages, currents, marker='o')
+        voltages, currents, kfactors = self.IV_curve(start_v, stop_v, step_v, curr_limit, delay)
+
+        fig, ax1 = plt.subplots()
+
+        ax1.set_xlabel('Voltage (V)')
+        ax1.set_ylabel('Current ($\mu$A)')
+        p1 = ax1.plot(voltages, currents, color = 'red', label="Current", marker='.')
+        ax1.tick_params(axis = 'y', labelcolor = 'red', color = 'red')
+
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('K-Factor')
+        p2 = ax2.plot(voltages, kfactors, color = 'blue', label="K-Factor", marker='.')
+        ax2.tick_params(axis = 'y', labelcolor = 'blue', color = 'blue')
+
         if self.read_polarity()['VAL'] == '-':
             plt.gca().invert_xaxis()
-        plt.xlabel('Voltage (V)')
-        plt.ylabel('Current ($\mu$A)')
-        plt.title('I-V Curve')
-        plt.grid(True)
-        plt.show()
 
+        ps = p1+p2
+        labs = [l.get_label() for l in ps]
+        ax1.legend(ps, labs, loc=0)
+        ax1.grid()
+        plt.title('IV Curve')
+        plt.show()

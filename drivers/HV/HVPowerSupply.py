@@ -112,7 +112,7 @@ class HVPowerSupply():
                 return None
         return None
     
-    def IV_curve(self, start_v, stop_v, step_v, curr_limit):
+    def IV_curve(self, start_v, stop_v, step_v, curr_limit, delay):
         n = abs((stop_v - start_v) // step_v) + 1
         voltages = []
         currents = []
@@ -124,10 +124,19 @@ class HVPowerSupply():
         self.set_voltage(start_v)
         self.set_channel_on()
         self.wait_ramp()
+        time.sleep(delay)
+        vmon_resp = self.read_vmon()
+        imon_resp = self.read_imon()
+        vmon = self.extract_float_value(vmon_resp)
+        imon = self.extract_float_value(imon_resp)
+        voltages.append(vmon*pol)
+        currents.append(imon)
+
         for v in range(1, int(n)):
             volt = start_v + v * step_v
             self.set_voltage(volt)
             self.wait_ramp()
+            time.sleep(delay)
             vmon_resp = self.read_vmon()
             imon_resp = self.read_imon()
             vmon = self.extract_float_value(vmon_resp)
@@ -137,8 +146,8 @@ class HVPowerSupply():
         self.set_channel_off()
         return voltages, currents
     
-    def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit):
-        voltages, currents = self.IV_curve(start_v, stop_v, step_v, curr_limit)
+    def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit, delay=10):
+        voltages, currents = self.IV_curve(start_v, stop_v, step_v, curr_limit, delay)
         plt.figure()
         plt.plot(voltages, currents, marker='o')
         if self.read_polarity()['VAL'] == '-':

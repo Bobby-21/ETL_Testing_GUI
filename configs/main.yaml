@@ -20,3 +20,5 @@ HV:
   channel: 0
   volt_tolerance: .5
   current_limit: 100 # microamps
+  ramp_up: 2 # volts/second
+  ramp_down: 2 # volts/second

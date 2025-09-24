@@ -141,7 +141,8 @@ class HVPowerSupply():
         voltages, currents = self.IV_curve(start_v, stop_v, step_v, curr_limit, delay)
         plt.figure()
         plt.plot(voltages, currents, marker='o')
-        plt.gca().invert_xaxis()
+        if self.read_polarity()['VAL'] == '-':
+            plt.gca().invert_xaxis()
         plt.xlabel('Voltage (V)')
         plt.ylabel('Current ($\mu$A)')
         plt.title('I-V Curve')

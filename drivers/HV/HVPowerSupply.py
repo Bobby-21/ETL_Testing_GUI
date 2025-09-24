@@ -112,7 +112,7 @@ class HVPowerSupply():
                 return None
         return None
     
-    def IV_curve(self, start_v, stop_v, step_v, curr_limit, delay=.25):
+    def IV_curve(self, start_v, stop_v, step_v, curr_limit):
         n = abs((stop_v - start_v) // step_v) + 1
         voltages = []
         currents = []
@@ -137,8 +137,8 @@ class HVPowerSupply():
         self.set_channel_off()
         return voltages, currents
     
-    def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit, delay):
-        voltages, currents = self.IV_curve(start_v, stop_v, step_v, curr_limit, delay)
+    def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit):
+        voltages, currents = self.IV_curve(start_v, stop_v, step_v, curr_limit)
         plt.figure()
         plt.plot(voltages, currents, marker='o')
         if self.read_polarity()['VAL'] == '-':

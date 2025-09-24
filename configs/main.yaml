@@ -19,3 +19,4 @@ HV:
   board_addr: 0
   channel: 0
   volt_tolerance: .5
+  current_limit: 100 # microamps

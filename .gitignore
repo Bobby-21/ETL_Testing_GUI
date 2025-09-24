@@ -13,7 +13,14 @@ wheels/
 .vscode
 
 # KCU firmware
-drivers/KCU/etl_test_fw-*
-drivers/KCU/*.zip
+drivers/KCU/*
 
+# PlatformIO
 get_platformio.py
+
+# Vim swap files
+*.swp
+*.swo
+*.un~
+
+# Add results/output directories when location they are generated is finalized

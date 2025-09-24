@@ -1,0 +1,21 @@
+Arduino:
+  baud: 115200
+  port: #insert
+  timeout: 1
+
+KCU:
+  IP: 192.168.0.15
+  fw_version: 3.2.3
+
+Chiller:
+  baud: #insert
+  port: #insert
+  timeout: 1
+
+HV:
+  baud: 9600
+  port: #insert
+  timeout: 1
+  board_addr: 0
+  channel: 0
+  volt_tolerance: .5

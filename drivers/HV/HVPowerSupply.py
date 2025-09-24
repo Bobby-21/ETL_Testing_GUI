@@ -102,6 +102,8 @@ class HVPowerSupply():
         while True:
             if abs(float(self.read_vmon()['VAL'])-float(self.read_vset()['VAL']))<= self.vtol:
                 break
+            if int(self.read_status()['VAL']) & 128:
+                raise ValueError("Compliance reached, supply tripped")
             time.sleep(.1)
     
     
@@ -138,7 +140,11 @@ class HVPowerSupply():
         for v in range(1, int(n)):
             volt = start_v + v * step_v
             self.set_voltage(volt)
-            self.wait_ramp()
+            try:
+                self.wait_ramp()
+            except ValueError:
+                print("Overcurrent reached, power supply tripped")
+                break
             time.sleep(delay)
             vmon_resp = self.read_vmon()
             imon_resp = self.read_imon()

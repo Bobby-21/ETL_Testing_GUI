@@ -98,13 +98,16 @@ class HVPowerSupply():
         response = self.send_command('MON', self.channel, "POL")
         return self.parse_response(response)
     
-    def wait_ramp(self):
+    def wait_ramp(self, delay):
         while True:
             if abs(float(self.read_vmon()['VAL'])-float(self.read_vset()['VAL']))<= self.vtol:
                 break
-            if int(self.read_status()['VAL']) & 128:
+            if int(self.read_status()['VAL']) & 128 or int(self.read_status()['VAL']) & 8:
                 raise ValueError("Compliance reached, supply tripped")
             time.sleep(.1)
+        time.sleep(delay)
+        if int(self.read_status()['VAL']) & 128 or int(self.read_status()['VAL']) & 8:
+                raise ValueError("Compliance reached, supply tripped")
     
     
     def extract_float_value(self, response_dict):
@@ -127,8 +130,10 @@ class HVPowerSupply():
         self.set_current_limit(curr_limit)
         self.set_voltage(start_v)
         self.set_channel_on()
-        self.wait_ramp()
-        time.sleep(delay)
+        try:
+            self.wait_ramp(delay)
+        except ValueError as e:
+            print(e)
         vmon_resp = self.read_vmon()
         imon_resp = self.read_imon()
         vmon = self.extract_float_value(vmon_resp)
@@ -141,11 +146,10 @@ class HVPowerSupply():
             volt = start_v + v * step_v
             self.set_voltage(volt)
             try:
-                self.wait_ramp()
-            except ValueError:
-                print("Overcurrent reached, power supply tripped")
+                self.wait_ramp(delay)
+            except ValueError as e:
+                print(e)
                 break
-            time.sleep(delay)
             vmon_resp = self.read_vmon()
             imon_resp = self.read_imon()
             vmon = self.extract_float_value(vmon_resp)

@@ -6,3 +6,6 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="21e1", ATTRS{idProduct}=="0003", MODE="0666"
 
 # Silicon Labs CP2105 USB-to-UART Bridge (used for KCU board console)
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea70", MODE="0666", GROUP="dialout", SYMLINK+="kcu_uart"
+
+# Julabo Chiller
+# insert here

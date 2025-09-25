@@ -1,20 +1,21 @@
 Arduino:
   baud: 115200
-  port: #insert
+  port: "/dev/arduino"
   timeout: 1
 
 KCU:
   IP: 192.168.0.15
   fw_version: 3.2.3
+  port: "/dev/kcu_uart"
 
 Chiller:
   baud: #insert
-  port: #insert
+  port: "/dev/chiller"
   timeout: 1
 
 HV:
   baud: 9600
-  port: #insert
+  port: "/dev/hv_supply"
   timeout: 1
   board_addr: 0
   channel: 0

@@ -2,7 +2,7 @@
 SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="0043", MODE="0666", GROUP="dialout", SYMLINK+="arduino"
 
 # CAEN NIM/Desktop HV Power Supply (ttyACM*)
-SUBSYSTEM=="tty", ATTRS{idVendor}=="21e1", ATTRS{idProduct}=="0003", MODE="0666", GROUP="dialout", SYMLINK+="caen_hv"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="21e1", ATTRS{idProduct}=="0003", MODE="0666", GROUP="dialout", SYMLINK+="hv_supply"
 
 # Silicon Labs CP2105 USB-to-UART Bridge (used for KCU board console)
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea70", MODE="0666", GROUP="dialout", SYMLINK+="kcu_uart"

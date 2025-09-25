@@ -38,3 +38,20 @@ uv sync
 # Install additional dependencies for GUI
 echo "Installing additional dependencies for GUI..."
 sudo apt install libxcb-xinerama0
+
+
+vivado_path='export PATH="$PATH:/tools/Xilinx/Vivado/2021.1/bin"'
+
+
+# check if vivado is added to path, if not, then add to bashrc
+if grep -q "Vivado" ~/.bashrc; then
+    echo "Vivado already added to path"
+else
+    echo "Adding 'Vivado' to path in ~/.bashrc..."
+    echo "" >> ~/.bashrc
+    echo "# Add vivado to path" >> ~/.bashrc
+    echo "$vivado_path" >> ~/.bashrc
+    echo "Added Vivado to path in ~/.bashrc!"
+fi
+
+source ~/.bashrc

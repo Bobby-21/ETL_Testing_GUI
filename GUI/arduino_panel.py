@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QGridLayout, QFrame,
-    QPushButton, QLabel, QSizePolicy
+    QPushButton, QLabel, QSizePolicy, QHBoxLayout, QFormLayout
 )
 from pathlib import Path
 from PyQt5.QtCore import QSize, Qt
@@ -10,10 +10,12 @@ from panel import Panel
 import threading
 import serial
 import time
-from ETL_Testing_GUI.src.sensors import Sensors
 
 MAIN_DIR = Path(__file__).parent.parent
-WORKER_PATH = MAIN_DIR / "src" / "recorder.py"
+src_dir = MAIN_DIR / "src"
+sys.path.append(str(src_dir))
+
+from sensors import Sensors
 
 
 class ArduinoPanel(Panel):
@@ -58,7 +60,6 @@ class ArduinoPanel(Panel):
         row0 = 1
 
         # ---------- form: connect/disconnect/status ----------
-        from PyQt5.QtWidgets import QHBoxLayout, QFormLayout
         form = QFormLayout()
 
         self.recorder_stop_evt = None
@@ -67,13 +68,13 @@ class ArduinoPanel(Panel):
 
         self.btn_connect = QPushButton("Connect")
         self.btn_connect.setObjectName("greenButton")
-        self.btn_connect.clicked.connect(start_recording)
-
+        self.btn_connect.clicked.connect(self.start_recording)
         self.btn_disconnect = QPushButton("Disconnect")
         self.lbl_status = QLabel("Disconnected")
 
         connect_row = QHBoxLayout()
         connect_row.addWidget(self.btn_connect)
+        
         connect_row.addWidget(self.btn_disconnect)
         connect_row.addWidget(self.lbl_status, 1, Qt.AlignLeft)
 
@@ -109,47 +110,50 @@ class ArduinoPanel(Panel):
         self.subgrid.addWidget(self.TC2_fault_lbl, row0 + 11, 0)
         self.subgrid.setRowStretch(row0 + 11, 1)
 
-        def start_recording(port="/dev/arduino", baud=115200, timeout=1.0, sample_time=1.0):
-            self.recorder_stop_evt = threading.Event()
+        # ----------- Arduino info ------------
+        self.arduino = Sensors("/dev/arduino", baudrate=115200, timeout=1.0)
+        self.sample_time = 1.0
 
-            self.arduino = Sensors(port, baud, timeout)
+    def start_recording(self):
+        self.recorder_stop_evt = threading.Event()
+        try:
+            self.arduino.connect()
+        except serial.SerialException as e:
+            print(f"Failed to connect: {e}")
+
+        self.recorder_stop_evt.clear()
+        self.recording_thread = threading.Thread(target=self.record, daemon=True)
+        self.recording_thread.start()
+
+    def stop_recording(self):
+        self.recorder_stop_evt.set()
+        if self.recording_thread:
+            self.recording_thread.join(timeout=1)
+        if self.arduino:
+            self.arduino.close()
+
+
+    def record(self):
+        while not self.recorder_stop_evt.is_set():
+
             try:
-                self.arduino.connect()
-            except serial.SerialException as e:
-                print(f"Failed to connect: {e}")
+                self.arduino.update_all()
+                data = self.arduino.package()
+            except Exception as e:
+                print(f"Recording Error: {e}")
 
-            self.recorder_stop_evt.clear()
-            self.recording_thread = threading.Thread(target=record, args=(self.arduino, sample_time, self.recorder_stop_evt), daemon=True)
-            self.recording_thread.start()
+            self.ambtemp_lbl.setText(f"Ambient Temp: {data['Ambient Temperature']:.1f}°C")
+            self.rH_lbl.setText(f"Relative Humidity: {data['Relative Humidity']:.1f}%")
+            self.dewpoint_lbl.setText(f"Dew Point: {data['Dewpoint']:.1f}°C")
+            self.dhtstatus_lbl.setText(f"DHT Status: {'OK' if data['DHT Status'] else 'FAULT'}")
+            self.door_lbl.setText(f"Door: {'OPEN' if data['Door Status'] else 'CLOSED'}")
+            self.leak_lbl.setText(f"Leak: {'YES' if data['Leak Status'] else 'NO'}")
+            self.TC1_lbl.setText(f"TC1 Temp: {data['TC Temperatures'][0]:.1f}°C")
+            self.TC1_fault_lbl.setText(f"TC1 Faults: {', '.join(data['TC Faults'][0]) if data['TC Faults'][0] != ['OK'] else 'OK'}")
+            self.TC2_lbl.setText(f"TC2 Temp: {data['TC Temperatures'][1]:.1f}°C")
+            self.TC2_fault_lbl.setText(f"TC2 Faults: {', '.join(data['TC Faults'][1]) if data['TC Faults'][1] != ['OK'] else 'OK'}") 
 
-        def stop_recording(self):
-            self.stop_evt.set()
-            if self.thread:
-                self.thread.join(timeout=1)
-            if self.arduino:
-                self.arduino.close()
+            time.sleep(self.sample_time)
 
-
-        def record(ard, sample_time, stop_evt):
-            while not stop_evt.is_set():
-
-                try:
-                    ard.update_all()
-                    data = ard.package()
-                except Exception as e:
-                    print(f"Recording Error: {e}")
-
-                self.ambtemp_lbl.setText(f"Ambient Temp: {data['Ambient Temperature']:.1f}°C")
-                self.rH_lbl.setText(f"Relative Humidity: {data['Relative Humidity']:.1f}%")
-                self.dewpoint_lbl.setText(f"Dew Point: {data['Dewpoint']:.1f}°C")
-                self.dhtstatus_lbl.setText(f"DHT Status: {'OK' if data['DHT Status'] else 'FAULT'}")
-                self.door_lbl.setText(f"Door: {'OPEN' if data['Door Status'] else 'CLOSED'}")
-                self.leak_lbl.setText(f"Leak: {'YES' if data['Leak Status'] else 'NO'}")
-                self.TC1_lbl.setText(f"TC1 Temp: {data['TC Temperatures'][0]:.1f}°C")
-                self.TC1_fault_lbl.setText(f"TC1 Faults: {', '.join(data['TC Faults'][0]) if data['TC Faults'][0] != ['OK'] else 'OK'}")
-                self.TC2_lbl.setText(f"TC2 Temp: {data['TC Temperatures'][1]:.1f}°C")
-                self.TC2_fault_lbl.setText(f"TC2 Faults: {', '.join(data['TC Faults'][1]) if data['TC Faults'][1] != ['OK'] else 'OK'}") 
-
-                time.sleep(sample_time)
 
         

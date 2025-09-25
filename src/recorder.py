@@ -4,12 +4,12 @@ import time
 import queue
 from sensors import Sensors
 
-data_q = queue.Queue(maxsize=10)
-recorder_stop_evt = threading.Event()
-
 # FIX: Sensors object should be initialized with values from json config
-# Still need to figure out how udev rules will play here
-def start_recording(port, baud=115200, timeout=1.0, sample_time=1.0):
+def start_recording(port="/dev/arduino", baud=115200, timeout=1.0, sample_time=1.0):
+
+    data_q = queue.Queue(maxsize=10)
+    recorder_stop_evt = threading.Event()
+
     arduino = Sensors(port, baud, timeout)
     try:
         arduino.connect()
@@ -18,21 +18,21 @@ def start_recording(port, baud=115200, timeout=1.0, sample_time=1.0):
         return False, None, arduino
 
     recorder_stop_evt.clear()
-    recording_thread = threading.Thread(target=record, args=(arduino, sample_time), daemon=True)
+    recording_thread = threading.Thread(target=record, args=(arduino, sample_time, data_q, recorder_stop_evt), daemon=True)
     recording_thread.start()
 
-    return arduino.check_serial_connected(), recording_thread, arduino
+    return arduino.check_serial_connected(), recording_thread, arduino, recorder_stop_evt, data_q
 
-def stop_recording(thread, arduino):
-    recorder_stop_evt.set()
+def stop_recording(thread, arduino, stop_evt):
+    stop_evt.set()
     if thread:
         thread.join(timeout=1)
     if arduino:
         arduino.close()
 
 
-def record(ard, sample_time):
-    while not recorder_stop_evt.is_set():
+def record(ard, sample_time, dqueue, stop_evt):
+    while not stop_evt.is_set():
 
         try:
             ard.update_all()
@@ -40,8 +40,8 @@ def record(ard, sample_time):
         except Exception as e:
             print(f"Recording Error: {e}")
 
-        if not data_q.empty():
-            data_q.get_nowait()
-        data_q.put_nowait(data)
+        if not dqueue.empty():
+            dqueue.get_nowait()
+        dqueue.put_nowait(data)
 
         time.sleep(sample_time)

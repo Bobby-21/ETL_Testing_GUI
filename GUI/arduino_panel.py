@@ -7,9 +7,14 @@ from pathlib import Path
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
 from panel import Panel
+import threading
+import serial
+import time
+from ETL_Testing_GUI.src.sensors import Sensors
 
 MAIN_DIR = Path(__file__).parent.parent
-WORKER_PATH = MAIN_DIR / "src" / "sensors.py"
+WORKER_PATH = MAIN_DIR / "src" / "recorder.py"
+
 
 class ArduinoPanel(Panel):
     def __init__(self, title="Arduino"):
@@ -56,8 +61,14 @@ class ArduinoPanel(Panel):
         from PyQt5.QtWidgets import QHBoxLayout, QFormLayout
         form = QFormLayout()
 
+        self.recorder_stop_evt = None
+        self.recording_thread = None
+        self.arduino = None
+
         self.btn_connect = QPushButton("Connect")
         self.btn_connect.setObjectName("greenButton")
+        self.btn_connect.clicked.connect(start_recording)
+
         self.btn_disconnect = QPushButton("Disconnect")
         self.lbl_status = QLabel("Disconnected")
 
@@ -72,16 +83,16 @@ class ArduinoPanel(Panel):
             lbl.setFont(QFont("Arial", 18, QFont.Bold))
             return lbl
 
-        self.ambtemp_lbl = make_label("Ambient Temp: 24.2°C")
-        self.rH_lbl = make_label("Relative Humidity: 45.3%")
-        self.dewpoint_lbl = make_label("Dew Point: 12.3°C")
-        self.dhtstatus_lbl = make_label("DHT Status: OK")
-        self.door_lbl = make_label("Door: Closed")
-        self.leak_lbl = make_label("Leak: No Leak")
-        self.TC1_lbl = make_label("TC1 Temp: 22.5°C")
-        self.TC1_fault_lbl = make_label("TC1 Faults: OK")
-        self.TC2_lbl = make_label("TC2 Temp: 23.1°C")
-        self.TC2_fault_lbl = make_label("TC2 Faults: OK")
+        self.ambtemp_lbl = make_label("Ambient Temp: --.-°C")
+        self.rH_lbl = make_label("Relative Humidity: --.-%")
+        self.dewpoint_lbl = make_label("Dew Point: --.-°C")
+        self.dhtstatus_lbl = make_label("DHT Status: --")
+        self.door_lbl = make_label("Door: --")
+        self.leak_lbl = make_label("Leak: --")
+        self.TC1_lbl = make_label("TC1 Temp: --.-°C")
+        self.TC1_fault_lbl = make_label("TC1 Faults: --")
+        self.TC2_lbl = make_label("TC2 Temp: --.-°C")
+        self.TC2_fault_lbl = make_label("TC2 Faults: --")
 
         # ---------- layout into subgrid ----------
         self.subgrid.addLayout(form,       row0 + 0, 0)
@@ -97,3 +108,48 @@ class ArduinoPanel(Panel):
         self.subgrid.addWidget(self.TC2_lbl,       row0 + 10, 0)
         self.subgrid.addWidget(self.TC2_fault_lbl, row0 + 11, 0)
         self.subgrid.setRowStretch(row0 + 11, 1)
+
+        def start_recording(port="/dev/arduino", baud=115200, timeout=1.0, sample_time=1.0):
+            self.recorder_stop_evt = threading.Event()
+
+            self.arduino = Sensors(port, baud, timeout)
+            try:
+                self.arduino.connect()
+            except serial.SerialException as e:
+                print(f"Failed to connect: {e}")
+
+            self.recorder_stop_evt.clear()
+            self.recording_thread = threading.Thread(target=record, args=(self.arduino, sample_time, self.recorder_stop_evt), daemon=True)
+            self.recording_thread.start()
+
+        def stop_recording(self):
+            self.stop_evt.set()
+            if self.thread:
+                self.thread.join(timeout=1)
+            if self.arduino:
+                self.arduino.close()
+
+
+        def record(ard, sample_time, stop_evt):
+            while not stop_evt.is_set():
+
+                try:
+                    ard.update_all()
+                    data = ard.package()
+                except Exception as e:
+                    print(f"Recording Error: {e}")
+
+                self.ambtemp_lbl.setText(f"Ambient Temp: {data['Ambient Temperature']:.1f}°C")
+                self.rH_lbl.setText(f"Relative Humidity: {data['Relative Humidity']:.1f}%")
+                self.dewpoint_lbl.setText(f"Dew Point: {data['Dewpoint']:.1f}°C")
+                self.dhtstatus_lbl.setText(f"DHT Status: {'OK' if data['DHT Status'] else 'FAULT'}")
+                self.door_lbl.setText(f"Door: {'OPEN' if data['Door Status'] else 'CLOSED'}")
+                self.leak_lbl.setText(f"Leak: {'YES' if data['Leak Status'] else 'NO'}")
+                self.TC1_lbl.setText(f"TC1 Temp: {data['TC Temperatures'][0]:.1f}°C")
+                self.TC1_fault_lbl.setText(f"TC1 Faults: {', '.join(data['TC Faults'][0]) if data['TC Faults'][0] != ['OK'] else 'OK'}")
+                self.TC2_lbl.setText(f"TC2 Temp: {data['TC Temperatures'][1]:.1f}°C")
+                self.TC2_fault_lbl.setText(f"TC2 Faults: {', '.join(data['TC Faults'][1]) if data['TC Faults'][1] != ['OK'] else 'OK'}") 
+
+                time.sleep(sample_time)
+
+        

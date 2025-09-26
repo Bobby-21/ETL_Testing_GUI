@@ -4,6 +4,9 @@ import serial
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
+import os
+
 
 class HVPowerSupply():
     def __init__(self, port, baud=9600, bd_addr=0, channel=0):
@@ -164,8 +167,23 @@ class HVPowerSupply():
         self.set_channel_off()
         return voltages, currents, kfactors
     
-    def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit, delay=10):
+    def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit, moduleid, delay=10):
         voltages, currents, kfactors = self.IV_curve(start_v, stop_v, step_v, curr_limit, delay)
+
+        timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+        maindir = Path(__file__).parent.parent.parent
+
+        resultdir = maindir / "IV_Curves" / str(moduleid) / timestamp
+        if not os.path.isdir(resultdir):
+            os.makedirs(resultdir)
+
+        resultdir.mkdir(exist_ok=True)
+
+        outfile = resultdir / f"IV_Curve_{moduleid}_{timestamp}.csv"
+        with open(outfile, 'w') as f:
+            f.write(f"Voltage (V): {voltages}\n")
+            f.write(f"Current (uA): {currents}\n")
+            f.write(f"K-Factor: {kfactors}\n")
 
         fig, ax1 = plt.subplots()
 
@@ -187,4 +205,5 @@ class HVPowerSupply():
         ax1.legend(ps, labs, loc=0)
         ax1.grid()
         plt.title('IV Curve')
+        plt.savefig(resultdir / f"IV_Curve_{moduleid}_{timestamp}.png")
         plt.show()

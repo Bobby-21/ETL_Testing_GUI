@@ -24,3 +24,5 @@ get_platformio.py
 *.un~
 
 # Add results/output directories when location they are generated is finalized
+
+IV_Curves/*

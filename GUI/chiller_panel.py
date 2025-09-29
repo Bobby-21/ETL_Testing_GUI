@@ -1,22 +1,31 @@
-# chiller_panel.py
-import sys, os, json, platform, glob
+# GUI/chiller_panel.py
+import sys, os, platform, glob
 from pathlib import Path
+
 from PyQt5.QtWidgets import (
     QHBoxLayout, QFormLayout, QPushButton, QLabel,
     QComboBox, QTextEdit, QDoubleSpinBox
 )
-from PyQt5.QtCore import Qt, pyqtSlot, QProcess, QProcessEnvironment, QTimer
+from PyQt5.QtCore import Qt, pyqtSlot, QTimer
 from PyQt5.QtGui import QFont
+
 from panel import Panel
 import qt_ansi
 
+# repo root / src on path
 MAIN_DIR = Path(__file__).parent.parent
-WORKER_PATH = MAIN_DIR / "src" / "julabo.py"
+src_dir = MAIN_DIR / "src"
+if str(src_dir) not in sys.path:
+    sys.path.append(str(src_dir))
+
+# new client API (process-managed)
+from src.devices.chiller.client import ChillerClient
+
 
 class ChillerPanel(Panel):
     """
-    Chiller control panel using a separate worker process (/src/julabo.py)
-    so device I/O is isolated from the GUI and other panels.
+    Chiller control panel using a separate worker process
+    (src/devices/chiller/worker.py → delegates to julabo.py).
     """
 
     def __init__(self, title="Chiller"):
@@ -56,7 +65,8 @@ class ChillerPanel(Panel):
 
         QPushButton#blueButton { 
             background-color: #2563eb; 
-            color: #ffffff;}
+            color: #ffffff;
+        }
         QPushButton#blueButton:hover  { background-color: #1d4ed8; }
         QPushButton#blueButton:pressed{ background-color: #1e40af; }
 
@@ -76,20 +86,13 @@ class ChillerPanel(Panel):
         # ---------- form: device + connect ----------
         form = QFormLayout()
 
-        # dev_row = QHBoxLayout()
-        # self.dev_combo = QComboBox()
-        # self.btn_refresh = QPushButton("Refresh")
-        # self.btn_refresh.clicked.connect(self._refresh_ports)
-        # dev_row.addWidget(self.dev_combo, 1)
-        # dev_row.addWidget(self.btn_refresh)
-        # form.addRow("Device:", self.dev_combo)
         dev_row = QHBoxLayout()
         self.dev_combo = QComboBox()
         self.btn_refresh = QPushButton("Refresh")
         self.btn_refresh.clicked.connect(self._refresh_ports)
         dev_row.addWidget(self.dev_combo, 1)
         dev_row.addWidget(self.btn_refresh)
-        form.addRow("Device:", dev_row)   # <-- was self.dev_combo; now add the whole row   
+        form.addRow("Device:", dev_row)
 
         connect_row = QHBoxLayout()
         self.btn_connect = QPushButton("Connect")
@@ -110,16 +113,15 @@ class ChillerPanel(Panel):
         self.btn_set = QPushButton("Set Temp")
         self.btn_set.setEnabled(False)
 
-        # Run button to power on / start circulation
         self.btn_run = QPushButton("Run")
-        self.btn_run.setObjectName("blueButton")   # <-- make it blue
+        self.btn_run.setObjectName("blueButton")
         self.btn_run.setEnabled(False)
         self._powered = False
 
         temp_row.addWidget(QLabel("Setpoint:"))
         temp_row.addWidget(self.temp_spin)
         temp_row.addWidget(self.btn_set)
-        temp_row.addWidget(self.btn_run)      # add it to the row
+        temp_row.addWidget(self.btn_run)
 
         # ---------- info ----------
         info_row = QHBoxLayout()
@@ -130,7 +132,7 @@ class ChillerPanel(Panel):
         info_row.addWidget(self.lbl_current_temp)
         info_row.addWidget(self.lbl_status_onoff)
 
-        # ---------- log (ANSI + Unicode) ----------
+        # ---------- log ----------
         self.log = QTextEdit()
         qt_ansi.configure_textedit(self.log, wrap=True)
         self._ansi_sink = qt_ansi.AnsiLogSink(self.log, cr_mode="newline")
@@ -143,24 +145,21 @@ class ChillerPanel(Panel):
         self.subgrid.addWidget(self.log,    row0 + 4, 0)
         self.subgrid.setRowStretch(row0 + 4, 1)
 
-        # ---------- worker process ----------
-        self.proc = QProcess(self)
-        env = QProcessEnvironment.systemEnvironment()
-        env.insert("PYTHONUNBUFFERED", "1")
-        env.insert("PYTHONIOENCODING", "utf-8")
-        env.insert("LANG", "en_US.UTF-8")
-        env.insert("LC_ALL", "en_US.UTF-8")
-        self.proc.setProcessEnvironment(env)
-        self.proc.setProcessChannelMode(QProcess.MergedChannels)
-        self.proc.readyReadStandardOutput.connect(self._read_worker_output)
-        self.proc.started.connect(self._worker_started)
-        self.proc.finished.connect(self._worker_finished)
-        self.proc.errorOccurred.connect(self._worker_error)
+        # ---------- client (process owner) ----------
+        self.client = ChillerClient(self)
+        self.client.log.connect(self._ansi_sink.feed)
+        self.client.error.connect(self._on_error)
+        self.client.warn.connect(lambda w: self._append_log(f"[Chiller] WARN: {w}"))
+        self.client.connected.connect(self._on_connected)
+        self.client.disconnected.connect(self._on_disconnected)
+        self.client.temp.connect(self._on_temp)
+        self.client.status.connect(self._on_status)
+        self.client.ack.connect(self._on_ack)
 
         # ---------- signals ----------
         self.btn_connect.clicked.connect(self._on_connect_clicked)
         self.btn_set.clicked.connect(self._on_set_clicked)
-        self.btn_run.clicked.connect(self._on_run_clicked)  
+        self.btn_run.clicked.connect(self._on_run_clicked)
 
         # ---------- state ----------
         self._connected = False
@@ -241,11 +240,11 @@ class ChillerPanel(Panel):
 
     @pyqtSlot()
     def _on_connect_clicked(self):
-        if self._connected or self.proc.state() != QProcess.NotRunning:
+        if self._connected or self.client.isRunning():
+            # act as "Disconnect"
             self._append_log("[Chiller] Disconnecting…")
             self.btn_connect.setEnabled(False)
-            self.proc.terminate()
-            QTimer.singleShot(800, lambda: self.proc.kill() if self.proc.state() != QProcess.NotRunning else None)
+            self.client.stop()
             return
 
         dev = self.dev_combo.currentData()
@@ -253,31 +252,68 @@ class ChillerPanel(Panel):
             self._append_log("[Chiller] Please select a valid serial device.")
             return
 
-        cmd = sys.executable
-        args = ["-u", str(WORKER_PATH), "--device", dev, "--sample_time", "1.0"]
-        self._append_log(f"[Chiller] Launching worker: {cmd} {' '.join(args)}")
+        self._append_log(f"[Chiller] Launching worker for {dev}")
         self.btn_connect.setEnabled(False)
         self.btn_set.setEnabled(False)
         self.btn_run.setEnabled(False)
-        self.proc.setWorkingDirectory(str(MAIN_DIR))
-        self.proc.start(cmd, args)
+        # sample_time can be a control (for now hardcode 1.0s like before)
+        self.client.start(device=dev, sample_time=1.0)
 
-    def _worker_started(self):
-        self._append_log("[Chiller] Worker started.")
-        self.btn_connect.setEnabled(True)
-        self.btn_connect.setText("Disconnect")
-        self.lbl_status.setText("Connecting…")
+    # ===================== event handlers from client =====================
 
-    def _worker_finished(self, code:int, status:QProcess.ExitStatus):
-        self._ansi_sink.flush()
-        self._append_log(f"[Chiller] Worker exited (code={code}, status={int(status)}).")
+    def _on_connected(self, dev: str):
+        self._append_log(f"[Chiller] Connected to {dev}")
+        self._set_connected_ui(True)
+        self.lbl_status_onoff.setText("Status: --")
+        # ask worker for an initial status snapshot
+        self.client.request_status()
+
+    def _on_disconnected(self):
+        self._append_log("[Chiller] Disconnected.")
         self._set_connected_ui(False)
 
-    def _worker_error(self, err: QProcess.ProcessError):
-        self._append_log(f"[Chiller] Worker error: {err}.")
+    def _on_error(self, msg: str):
+        self._append_log(f"\x1b[31m[Chiller] ERROR: {msg}\x1b[0m")
+        # ensure UI resets
         self._set_connected_ui(False)
 
-    # ===================== send commands =====================
+    def _on_temp(self, value: float):
+        try:
+            self.lbl_current_temp.setText(f"Current Temp: {float(value):.2f} °C")
+        except Exception:
+            pass
+
+    def _on_status(self, msg: dict):
+        sp  = msg.get("setpoint")
+        pv  = msg.get("temperature")
+        pwr = msg.get("power")
+
+        if sp is not None:
+            try: self.temp_spin.setValue(float(sp))
+            except Exception: pass
+
+        if pv is not None:
+            try: self.lbl_current_temp.setText(f"Current Temp: {float(pv):.2f} °C")
+            except Exception: pass
+
+        if pwr is not None:
+            on = self._to_bool(pwr)
+            self._update_power_ui(on)
+            self.lbl_status_onoff.setText("Status: ON" if on else "Status: OFF")
+
+        if self._connected:
+            self.btn_run.setEnabled(True)
+
+    def _on_ack(self, msg: dict):
+        if msg.get("cmd") == "power":
+            on = self._to_bool(msg.get("on"))
+            self._update_power_ui(on)
+            self.lbl_status_onoff.setText("Status: ON" if on else "Status: OFF")
+            if self._connected:
+                self.btn_run.setEnabled(True)
+        self._append_log(f"[Chiller] ACK: {msg}")
+
+    # ===================== send commands (via client) =====================
 
     @pyqtSlot()
     def _on_set_clicked(self):
@@ -285,10 +321,9 @@ class ChillerPanel(Panel):
             self._append_log("[Chiller] Not connected.")
             return
         sp = float(self.temp_spin.value())
-        self._send_cmd({"cmd":"set_temp","value":sp})
+        self.client.set_temp(sp)
         self._append_log(f"[Chiller] Setpoint request: {sp:.2f} °C")
 
-    
     @pyqtSlot()
     def _on_run_clicked(self):
         """Toggle power: ON → OFF, OFF → ON."""
@@ -300,107 +335,14 @@ class ChillerPanel(Panel):
         self.btn_run.setEnabled(False)
 
         if self._powered:
-            self._send_cmd({"cmd": "power", "on": False})
+            self.client.power(False)
             self._append_log("[Chiller] Power OFF requested.")
         else:
-            self._send_cmd({"cmd": "power", "on": True})
+            self.client.power(True)
             self._append_log("[Chiller] Power ON requested.")
 
         # Optional: ask for a fresh status snapshot
-        self._send_cmd({"cmd": "status"})
-
-    def _send_cmd(self, obj):
-        if self.proc.state() == QProcess.NotRunning:
-            self._append_log("[Chiller] Worker not running.")
-            return
-        data = (json.dumps(obj) + "\n").encode("utf-8")
-        self.proc.write(data)
-
-    # ===================== process output =====================
-
-    def _read_worker_output(self):
-        data = bytes(self.proc.readAllStandardOutput())
-        if not data:
-            return
-        text = data.decode("utf-8", errors="replace")
-        for raw in text.splitlines():
-            if not raw.strip():
-                continue
-            try:
-                msg = json.loads(raw)
-                self._handle_event(msg)
-            except Exception:
-                self._ansi_sink.feed(raw + "\n")
-
-    def _handle_event(self, msg: dict):
-        et = msg.get("event")
-
-        if et == "connected":
-            self._append_log(f"[Chiller] Connected to {msg.get('dev')}")
-            self._set_connected_ui(True)
-            self.lbl_status_onoff.setText("Status: --")
-            # ask worker for an initial status snapshot
-            self._send_cmd({"cmd": "status"})
-            return
-
-        if et == "disconnected":
-            self._append_log("[Chiller] Disconnected.")
-            self._set_connected_ui(False)
-            return
-
-        if et == "temp":
-            try:
-                val = float(msg.get("value"))
-                self.lbl_current_temp.setText(f"Current Temp: {val:.2f} °C")
-            except Exception:
-                pass
-            return
-
-        if et == "status":
-            sp  = msg.get("setpoint")
-            pv  = msg.get("temperature")
-            pwr = msg.get("power")
-
-            if sp is not None:
-                try: self.temp_spin.setValue(float(sp))
-                except Exception: pass
-
-            if pv is not None:
-                try: self.lbl_current_temp.setText(f"Current Temp: {float(pv):.2f} °C")
-                except Exception: pass
-
-            if pwr is not None:
-                on = self._to_bool(pwr)
-                self._update_power_ui(on)  # <<< flips Run <-> Power Off (blue/red)
-                self.lbl_status_onoff.setText("Status: ON" if on else "Status: OFF")
-
-            if self._connected:
-                self.btn_run.setEnabled(True)  # re-enable toggle once we have state
-            return
-
-        if et == "ack":
-            # reflect power change immediately when the worker acks it
-            if msg.get("cmd") == "power":
-                on = self._to_bool(msg.get("on"))
-                self._update_power_ui(on)
-                self.lbl_status_onoff.setText("Status: ON" if on else "Status: OFF")
-                if self._connected:
-                    self.btn_run.setEnabled(True)
-            self._append_log(f"[Chiller] ACK: {msg}")
-            return
-
-        if et == "warn":
-            self._append_log(f"[Chiller] WARN: {msg}")
-            return
-
-        if et == "error":
-            self._append_log(f"\x1b[31m[Chiller] ERROR: {msg.get('message')}\x1b[0m")
-            return
-
-        # Fallback: show anything unknown
-        self._append_log(f"[Chiller] {msg}")
-
-
+        self.client.request_status()
 
     # ===================== helpers =====================
 
@@ -413,17 +355,16 @@ class ChillerPanel(Panel):
         self.btn_connect.setText("Disconnect" if ok else "Connect")
         self.btn_connect.setEnabled(True)
         self.btn_set.setEnabled(ok)
-        self.btn_run.setEnabled(ok)   # enable Run only when connected
+        self.btn_run.setEnabled(ok)
         if not ok:
             self._update_power_ui(False)
 
     def _apply_button_style(self, btn: QPushButton, object_name: str):
-        """Re-apply style after changing objectName."""
         btn.setObjectName(object_name)
         btn.style().unpolish(btn)
         btn.style().polish(btn)
         btn.update()
-    
+
     def _to_bool(self, v):
         if isinstance(v, bool):
             return v
@@ -435,7 +376,6 @@ class ChillerPanel(Panel):
                 return True
             if s in ("off", "false", "0", "no", "n", "disabled"):
                 return False
-        # default safe: treat unknown as OFF
         return False
 
     def _update_power_ui(self, on: bool):

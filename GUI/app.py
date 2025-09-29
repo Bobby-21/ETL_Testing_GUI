@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("ETL Testing GUI")
-        self.setFixedSize(QSize(1500, 1000))
+        self.setFixedSize(QSize(1500, 1200))
         self.setStyleSheet("background-color: #3b3b3b;")
 
         # ----- Build panels -----

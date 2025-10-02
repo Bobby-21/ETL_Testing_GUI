@@ -141,6 +141,7 @@ class HVPowerSupply():
         imon_resp = self.read_imon()
         vmon = self.extract_float_value(vmon_resp)
         imon = self.extract_float_value(imon_resp)
+        print(f"Vmon: {vmon*pol}, Imon: {imon}")
         voltages.append(vmon*pol)
         currents.append(imon)
         kfactors.append(np.nan)
@@ -161,6 +162,8 @@ class HVPowerSupply():
                 kfactor = ((imon-currents[v-1])/(vmon-pol*voltages[v-1]))*(vmon/imon)
             else:
                 kfactor = np.nan
+
+            print(f"Vmon: {vmon*pol}, Imon: {imon}, K-Factor: {kfactor}")
             voltages.append(vmon*pol)
             currents.append(imon)
             kfactors.append(kfactor)

@@ -1,4 +1,4 @@
-# tamalero_panel.py
+# GUI/tamalero_panel.py
 import sys
 from pathlib import Path
 
@@ -7,15 +7,21 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QComboBox, QTextEdit, QCheckBox, QSizePolicy,
     QShortcut, QFrame
 )
-from PyQt5.QtCore import Qt, QProcess, QRegularExpression, pyqtSlot, QProcessEnvironment, QTimer
-from PyQt5.QtGui import QFont, QIntValidator, QRegularExpressionValidator, QKeySequence, QTextOption
+from PyQt5.QtCore import Qt, pyqtSlot, QRegularExpression
+from PyQt5.QtGui import QFont, QIntValidator, QRegularExpressionValidator, QKeySequence, QTextOption 
 
 from panel import Panel
 import qt_ansi
 
+# repo root / src on path (keep your original behavior)
 MAIN_DIR = Path(__file__).parent.parent
 src_dir = MAIN_DIR / "src"
-sys.path.append(str(src_dir))
+if str(src_dir) not in sys.path:
+    sys.path.append(str(src_dir))
+
+# new client
+from src.devices.tamalero.client import TamaleroClient
+
 
 class TamaleroPanel(Panel):
     def __init__(self, title="Tamalero"):
@@ -85,7 +91,6 @@ class TamaleroPanel(Panel):
 
         self.model_edit = QLineEdit()
         self.model_edit.setText("204")
-        # self.model_edit.setPlaceholderText("Module ID (e.g. 204)")
         self.model_edit.setValidator(QIntValidator(0, 10**9))
 
         form.addRow("KCU IP:", self.ip_edit)
@@ -153,32 +158,18 @@ class TamaleroPanel(Panel):
         self.subgrid.addWidget(self.params_widget,   row0 + 3, 0)
         self.subgrid.addWidget(self.log,             row0 + 4, 0)
 
-        # --------- Processes ----------
-        env = QProcessEnvironment.systemEnvironment()
-        env.insert("PYTHONUNBUFFERED", "1")
-        env.insert("PYTHONIOENCODING", "utf-8")
-        env.insert("LANG", "en_US.UTF-8")
-        env.insert("LC_ALL", "en_US.UTF-8")
-        env.insert("TERM", "xterm-256color")
-        env.insert("CLICOLOR_FORCE", "1")
-        env.insert("FORCE_COLOR", "3")
-
-        # connection process
-        self.conn_proc = QProcess(self)
-        self.conn_proc.setProcessEnvironment(env)
-        self.conn_proc.setProcessChannelMode(QProcess.MergedChannels)
-        self.conn_proc.readyReadStandardOutput.connect(self._read_conn_output)
-        self.conn_proc.finished.connect(self._conn_finished)
-        self.conn_proc.errorOccurred.connect(self._conn_error)
-        self.conn_proc.started.connect(self._conn_started)
-
-        # module test process
-        self.test_proc = QProcess(self)
-        self.test_proc.setProcessEnvironment(env)
-        self.test_proc.setProcessChannelMode(QProcess.MergedChannels)
-        self.test_proc.readyReadStandardOutput.connect(self._read_test_output)
-        self.test_proc.finished.connect(self._proc_finished)
-        self.test_proc.errorOccurred.connect(self._proc_error)
+        # --------- Client (single worker controlling both scripts) ----------
+        self.client = TamaleroClient(self)
+        self.client.log.connect(self._ansi_sink.feed)
+        self.client.ready.connect(self._on_ready)
+        self.client.error.connect(self._on_error)
+        self.client.warn.connect(lambda w: self._append_log(f"[Tamalero] WARN: {w}"))
+        self.client.disconnected.connect(self._on_disconnected)
+        self.client.status.connect(self._on_status)
+        self.client.conn_started.connect(self._on_conn_started)
+        self.client.conn_finished.connect(self._on_conn_finished)
+        self.client.test_started.connect(self._on_test_started)
+        self.client.test_finished.connect(self._on_test_finished)
 
         # --------- Signals ----------
         self.btn_connect.clicked.connect(self._on_connect_clicked)
@@ -192,18 +183,23 @@ class TamaleroPanel(Panel):
         self.abort_shortcut.setAutoRepeat(False)
 
         # --------- State ----------
-        self._connected = False
+        self._connected = False              # becomes True when conn script finishes OK
+        self._conn_running = False           # live connection script
+        self._test_running = False           # live test script
 
     # ===================== UI helpers =====================
 
     def _append_log(self, text: str):
-        # route status messages through the same sink so formatting is consistent
         self._ansi_sink.feed(text.rstrip("\n") + "\n")
 
     def _set_controls_enabled(self, enable_run: bool):
         self.btn_run.setEnabled(enable_run)
         self.test_combo.setEnabled(enable_run)
         self.params_widget.setEnabled(enable_run)
+
+    def _update_abort_enabled(self):
+        running = self._conn_running or self._test_running or self.client.isRunning()
+        self.btn_abort.setEnabled(running)
 
     # ===================== Validation =====================
 
@@ -237,7 +233,6 @@ class TamaleroPanel(Panel):
         self.params_widget.setLayout(layout)
 
     def _clear_params_form(self):
-        # keep for compatibility; we now swap the whole layout
         self._set_params_layout(QHBoxLayout())
 
     def _build_params_for(self, test_name: str):
@@ -288,9 +283,8 @@ class TamaleroPanel(Panel):
             w_nl1a = QLineEdit("")
             w_nl1a.setValidator(QIntValidator(1, 10**7))
             w_nl1a.setPlaceholderText("optional (e.g. 320)")
-            right.addRow("nl1a:", w_nl1a)     # ← moved to RIGHT column
+            right.addRow("nl1a:", w_nl1a)
             self.param_widgets["nl1a"] = w_nl1a
-
         else:
             left.addRow("", QLabel("No parameters for this test."))
 
@@ -304,23 +298,18 @@ class TamaleroPanel(Panel):
 
     @pyqtSlot()
     def _on_connect_clicked(self):
-        if self._connected:
+        # Toggle: if we consider ourselves connected or the worker is running, act as disconnect
+        if self.client.isRunning() and (self._connected or self._conn_running or self._test_running):
             self._append_log("[Tamalero] Disconnecting…")
-            try:
-                if self.conn_proc.state() != QProcess.NotRunning:
-                    self.conn_proc.kill()
-            finally:
-                self._connected = False
-                self.btn_connect.setText("Connect")
-                self.lbl_status.setText("Disconnected")
-                self._set_controls_enabled(False)
-                self._append_log("[Tamalero] Disconnected.")
-                self._update_abort_enabled()
+            self.lbl_status.setText("Disconnecting…")
+            self._set_controls_enabled(False)
+            self.client.stop()
+            # states will be reset in _on_disconnected()
             return
 
+        # Start worker & launch connection script
         ip = self.ip_edit.text().strip()
         model = self.model_edit.text().strip()
-
         if not ip or not self.ip_edit.hasAcceptableInput() or not self._is_valid_ipv4(ip):
             self._append_log("[Tamalero] Please enter a valid IPv4 address.")
             return
@@ -328,52 +317,14 @@ class TamaleroPanel(Panel):
             self._append_log("[Tamalero] Please enter a valid Model ID.")
             return
 
-        cmd = sys.executable
-        args = ["-u", str(MAIN_DIR / "module_test_sw" / "test_tamalero.py"),
-                "--kcu", ip, "--verbose", "--power_up", "--adcs"]
+        if not self.client.isRunning():
+            self._append_log("[Tamalero] Starting worker…")
+            self.client.start()
 
-        self._append_log(f"[Tamalero] Launching connection: {cmd} {' '.join(args)}")
+        self._append_log("[Tamalero] Launching connection…")
         self.btn_connect.setEnabled(False)
         self._set_controls_enabled(False)
-        self.conn_proc.start(cmd, args)
-        self._update_abort_enabled()
-
-    def _conn_started(self):
-        self.btn_connect.setEnabled(True)
-        self.btn_connect.setText("Cancel")
-        self.lbl_status.setText("Connecting…")
-        self._append_log("[Tamalero] Connection script started.")
-        self._update_abort_enabled()
-
-    def _read_conn_output(self):
-        data = bytes(self.conn_proc.readAllStandardOutput())
-        if data:
-            self._ansi_sink.feed(data)
-
-    def _conn_finished(self, code: int, status: QProcess.ExitStatus):
-        self._ansi_sink.flush()
-        ok = (status == QProcess.NormalExit and code == 0)
-        if ok:
-            self._append_log("[Tamalero] Connection script finished successfully.")
-            self._connected = True
-            self.lbl_status.setText("Ready")
-            self.btn_connect.setText("Disconnect")
-            self._set_controls_enabled(True)
-        else:
-            self._append_log(f"[Tamalero] Connection FAILED (code={code}, status={int(status)}).")
-            self._connected = False
-            self.lbl_status.setText("Disconnected")
-            self.btn_connect.setText("Connect")
-            self._set_controls_enabled(False)
-        self._update_abort_enabled()
-
-    def _conn_error(self, err: QProcess.ProcessError):
-        self._append_log(f"[Tamalero] Connection process error: {err}.")
-        self.btn_connect.setEnabled(True)
-        self._connected = False
-        self.btn_connect.setText("Connect")
-        self.lbl_status.setText("Disconnected")
-        self._set_controls_enabled(False)
+        self.client.connect_kcu(kcu=ip, verbose=True, power_up=True, adcs=True)
         self._update_abort_enabled()
 
     # ===================== Run test (module) =====================
@@ -383,7 +334,7 @@ class TamaleroPanel(Panel):
         if not self._connected:
             self._append_log("[Tamalero] Not connected. Connect first.")
             return
-        if self.test_proc.state() != QProcess.NotRunning:
+        if self._test_running:
             self._append_log("[Tamalero] A test is already running.")
             return
 
@@ -391,94 +342,130 @@ class TamaleroPanel(Panel):
         model = self.model_edit.text().strip()
         test = self.test_combo.currentText()
 
-        if test == "module":
-            cfg   = self.param_widgets["configuration"].text().strip()
-            host  = self.param_widgets["host"].text().strip() or "localhost"
-            modno = self.param_widgets["module"].text().strip() or "1"
-            qinj  = self.param_widgets["qinj"].isChecked()
-            charges_raw = self.param_widgets["charges"].text().strip()
-            nl1a  = self.param_widgets["nl1a"].text().strip()
-
-            cmd = sys.executable
-            args = ["-u", str(MAIN_DIR / "module_test_sw" / "test_module.py"),
-                    "--configuration", cfg,
-                    "--kcu", ip,
-                    "--host", host,
-                    "--moduleid", model,
-                    "--test_chip",
-                    "--module", modno]
-
-            if qinj:
-                args.append("--qinj")
-                if charges_raw:
-                    parts = [p for p in charges_raw.replace(",", " ").split() if p]
-                    if parts:
-                        args.append("--charges")
-                        args.extend(parts)
-            if nl1a:
-                args.extend(["--nl1a", nl1a])
-
-        else:
+        if test != "module":
             self._append_log(f"[Tamalero] Unknown test: {test}")
             return
 
-        self._append_log(f"[Tamalero] Launching test: {cmd} {' '.join(args)}")
+        cfg   = self.param_widgets["configuration"].text().strip()
+        host  = self.param_widgets["host"].text().strip() or "localhost"
+        modno = self.param_widgets["module"].text().strip() or "1"
+        qinj  = self.param_widgets["qinj"].isChecked()
+        charges_raw = self.param_widgets["charges"].text().strip()
+        nl1a  = self.param_widgets["nl1a"].text().strip() or None
+
+        charges_list = []
+        if qinj and charges_raw:
+            charges_list = [p for p in charges_raw.replace(",", " ").split() if p]
+
+        self._append_log("[Tamalero] Launching test…")
         self.btn_run.setEnabled(False)
         self.btn_connect.setEnabled(False)
         self.test_combo.setEnabled(False)
         self.params_widget.setEnabled(False)
-        self.test_proc.start(cmd, args)
-        self._update_abort_enabled()
 
-    def _read_test_output(self):
-        data = bytes(self.test_proc.readAllStandardOutput())
-        if data:
-            self._ansi_sink.feed(data)
+        if not self.client.isRunning():
+            self.client.start()
 
-    def _proc_finished(self, code: int, status: QProcess.ExitStatus):
-        self._ansi_sink.flush()
-        ok = (status == QProcess.NormalExit and code == 0)
-        if ok:
-            self._append_log("[Tamalero] Test finished successfully.")
-        else:
-            self._append_log(f"[Tamalero] Test FAILED (code={code}, status={int(status)}).")
-
-        self.btn_run.setEnabled(True)
-        self.btn_connect.setEnabled(True)
-        self.test_combo.setEnabled(True)
-        self.params_widget.setEnabled(True)
-        self._update_abort_enabled()
-
-    def _proc_error(self, err: QProcess.ProcessError):
-        self._append_log(f"[Tamalero] Test process error: {err}.")
-        self.btn_run.setEnabled(True)
-        self.btn_connect.setEnabled(True)
-        self.test_combo.setEnabled(True)
-        self.params_widget.setEnabled(True)
+        self.client.run_module(
+            configuration=cfg,
+            kcu=ip,
+            host=host,
+            moduleid=model,
+            module=modno,
+            qinj=qinj,
+            charges=charges_list,
+            nl1a=nl1a,
+        )
         self._update_abort_enabled()
 
     # ===================== Emergency abort =====================
-    def _update_abort_enabled(self):
-        running = (self.conn_proc.state() != QProcess.NotRunning) or \
-                  (self.test_proc.state() != QProcess.NotRunning)
-        self.btn_abort.setEnabled(running)
-
-    def _abort_proc(self, proc: QProcess, name: str, grace_ms: int = 750):
-        if proc.state() == QProcess.NotRunning:
-            return False
-        self._append_log(f"[Tamalero] EMERGENCY ABORT → {name} (pid={int(proc.processId())})")
-        self.lbl_status.setText("Aborting…")
-        proc.terminate()
-        QTimer.singleShot(grace_ms, lambda: proc.kill() if proc.state() != QProcess.NotRunning else None)
-        return True
 
     @pyqtSlot()
     def _on_abort_clicked(self):
-        any_aborted = False
-        if self.test_proc.state() != QProcess.NotRunning:
-            any_aborted |= self._abort_proc(self.test_proc, "test")
-        if self.conn_proc.state() != QProcess.NotRunning:
-            any_aborted |= self._abort_proc(self.conn_proc, "connection")
-        if not any_aborted:
-            self._append_log("[Tamalero] No active Tamalero process to abort.")
+        self._append_log("[Tamalero] EMERGENCY ABORT requested.")
+        self.lbl_status.setText("Aborting…")
+        self.client.abort()
+        self._update_abort_enabled()
+
+    # ===================== Client signal handlers =====================
+
+    def _on_ready(self):
+        # Worker is alive and ready to take commands
+        self._append_log("[Tamalero] Worker ready.")
+        self.lbl_status.setText("Ready")
+        self.btn_connect.setEnabled(True)
+        self._update_abort_enabled()
+
+    def _on_status(self, st: dict):
+        self._conn_running = bool(st.get("conn_running", False))
+        self._test_running = bool(st.get("test_running", False))
+        self._update_abort_enabled()
+
+    def _on_conn_started(self, args: dict):
+        self._conn_running = True
+        self._connected = False
+        self.lbl_status.setText("Connecting…")
+        self._append_log(f"[Tamalero] Connection started: {args}")
+        self._update_abort_enabled()
+
+    def _on_conn_finished(self, code: int):
+        self._conn_running = False
+        ok = (code == 0)
+        if ok:
+            self._connected = True
+            self.lbl_status.setText("Ready")
+            self._append_log("[Tamalero] Connection finished successfully.")
+            self.btn_connect.setText("Disconnect")
+            self._set_controls_enabled(True)
+        else:
+            self._connected = False
+            self.lbl_status.setText("Disconnected")
+            self._append_log(f"[Tamalero] Connection FAILED (code={code}).")
+            self.btn_connect.setText("Connect")
+            self._set_controls_enabled(False)
+        self.btn_connect.setEnabled(True)
+        self._update_abort_enabled()
+
+    def _on_test_started(self, args: dict):
+        self._test_running = True
+        self._append_log(f"[Tamalero] Test started: {args}")
+        self.lbl_status.setText("Running test…")
+        self._update_abort_enabled()
+
+    def _on_test_finished(self, code: int):
+        self._test_running = False
+        ok = (code == 0)
+        if ok:
+            self._append_log("[Tamalero] Test finished successfully.")
+        else:
+            self._append_log(f"[Tamalero] Test FAILED (code={code}).")
+        # restore controls
+        self.btn_run.setEnabled(True)
+        self.btn_connect.setEnabled(True)
+        self.test_combo.setEnabled(True)
+        self.params_widget.setEnabled(True)
+        self.lbl_status.setText("Ready" if self._connected else "Disconnected")
+        self._update_abort_enabled()
+
+    def _on_disconnected(self):
+        # worker stopped (either user stop or crash)
+        self._append_log("[Tamalero] Worker stopped.")
+        self._connected = False
+        self._conn_running = False
+        self._test_running = False
+        self.lbl_status.setText("Disconnected")
+        self.btn_connect.setText("Connect")
+        self.btn_connect.setEnabled(True)
+        self._set_controls_enabled(False)
+        self._update_abort_enabled()
+
+    def _on_error(self, e: str):
+        self._append_log(f"[Tamalero] ERROR: {e}")
+        # keep UX consistent with your previous panel
+        self.btn_connect.setEnabled(True)
+        if not (self._conn_running or self._test_running):
+            self._connected = False
+            self.lbl_status.setText("Disconnected")
+            self.btn_connect.setText("Connect")
+            self._set_controls_enabled(False)
         self._update_abort_enabled()

@@ -23,6 +23,8 @@ This Python GUI facilitates coldbox testing of ETL detector modules.
 
 ## Coldbox Setup
 
+For detailed instructions and documentation on the mechanical, electrical, thermal, and safety aspects of the coldbox, refer to the [documentation](./BU%20ETL%20Cold%20Box%20Documentation.pdf) and/or the [step file](./BU%20Coldbox%20V1.stp) to see the 3D model.
+
 ## Installation
 
 ### Note: Many steps require sudo privileges
@@ -56,9 +58,6 @@ Move to the `scripts/` directory and run `source setup_env.sh`. This does the fo
 - Adds Vivado to path if not already
 
 ### Flashing firmware
-
-To 
-
 
 ## User's Guide
 

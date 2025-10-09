@@ -54,4 +54,8 @@ else
     echo "Added Vivado to path in ~/.bashrc!"
 fi
 
+# Install Xilinx cable drivers
+cd $HOME/tools/Xilinx/Vivado/2021.1/data/xicom/cable_drivers/lin64/install_script/install_driveres/
+sudo ./install_drivers
+
 source ~/.bashrc

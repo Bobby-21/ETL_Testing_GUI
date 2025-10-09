@@ -56,6 +56,7 @@ Move to the `scripts/` directory and run `source setup_env.sh`. This does the fo
 - Downloads uv, the python dependency manager, and sets up the python environment for the project
 - Sets up the python path for Tamalero
 - Adds Vivado to path if not already
+- Installs Xilinx cable drivers
 
 ### Flashing firmware
 

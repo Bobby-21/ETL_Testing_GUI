@@ -121,7 +121,7 @@ class HVPowerSupply():
                 return None
         return None
     
-    def IV_curve(self, start_v, stop_v, step_v, curr_limit, delay):
+    def IV_curve(self, start_v, stop_v, step_v, curr_limit, leave_on, delay):
         n = abs((stop_v - start_v) // step_v) + 1
         voltages = []
         currents = []
@@ -167,11 +167,12 @@ class HVPowerSupply():
             voltages.append(vmon*pol)
             currents.append(imon)
             kfactors.append(kfactor)
-        self.set_channel_off()
+        if not leave_on:
+            self.set_channel_off()
         return voltages, currents, kfactors
     
-    def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit, moduleid, delay=10):
-        voltages, currents, kfactors = self.IV_curve(start_v, stop_v, step_v, curr_limit, delay)
+    def plot_IV_curve(self, start_v, stop_v, step_v, curr_limit, moduleid, leave_on=False, delay=10):
+        voltages, currents, kfactors = self.IV_curve(start_v, stop_v, step_v, curr_limit, leave_on, delay)
 
         timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
         maindir = Path(__file__).parent.parent.parent

@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import os
-
+from etlup.module.ModuleIV import ModuleIVV0
+from etlup import prod_session
 
 class HVPowerSupply():
     def __init__(self, port, baud=9600, bd_addr=0, channel=0):
@@ -211,3 +212,20 @@ class HVPowerSupply():
         plt.title('IV Curve')
         plt.savefig(resultdir / f"IV_Curve_{moduleid}_{timestamp}.png")
         plt.show()
+
+        upload_bool = input("Upload results to database? (y/n): ")
+        if upload_bool.strip().lower() == 'y' or upload_bool.strip().lower() == 'yes':
+            user = str(input("CERN Username: "))
+            iv = ModuleIVV0(
+                module=moduleid,
+                measurement_date=timestamp,
+                location="BU",
+                user_created=user,
+                current = currents,
+                voltage = voltages,
+                k_factor = kfactors,
+            )
+            print(iv)
+            tests = [iv]
+            prod_session.add_all(tests)
+            prod_session.upload()

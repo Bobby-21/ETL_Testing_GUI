@@ -29,6 +29,7 @@ dependencies = [
     "tqdm==4.64.1",
     "yahist==1.14.0",
     "pathlib>=1.0.1",
+    "etlup>=2.0.8",
 ]
 
 [tool.uv.sources]

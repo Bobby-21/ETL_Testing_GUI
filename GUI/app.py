@@ -21,41 +21,35 @@ class MainWindow(QMainWindow):
 
         # ----- Build panels -----
         self.ard = ArduinoPanel()
-        self.chill = ChillerPanel()
+        #self.chill = ChillerPanel()
         self.hv = HVPanel()         
         self.tam = TamaleroPanel()
-        self.term = ResultsPanel()
+        #self.term = ResultsPanel()
 
         # ----- Left column: vertical splitter (Arduino / Chiller / HV) -----
         self.left_split = QSplitter(Qt.Vertical)
         self.left_split.addWidget(self.ard)
-        self.left_split.addWidget(self.chill)
-        self.left_split.addWidget(self.hv)          
-        self.left_split.setChildrenCollapsible(False)
+        #self.left_split.addWidget(self.chill)
+        self.left_split.addWidget(self.hv)
         self.left_split.setHandleWidth(6)
         # Equal stretch so they split 1:1:1
         self.left_split.setStretchFactor(0, 1)
-        self.left_split.setStretchFactor(1, 1)
-        self.left_split.setStretchFactor(2, 1)      
+        self.left_split.setStretchFactor(1, 1)      
 
         # ----- Right column: vertical splitter (Tamalero / Terminal) -----
         self.right_split = QSplitter(Qt.Vertical)
         self.right_split.addWidget(self.tam)
-        self.right_split.addWidget(self.term)
-        self.right_split.setChildrenCollapsible(False)
+        #self.right_split.addWidget(self.term)
         self.right_split.setHandleWidth(6)
         # Keep ~7:3 ratio
-        self.right_split.setStretchFactor(0, 7)
-        self.right_split.setStretchFactor(1, 3)
 
         # ----- Main: horizontal splitter (Left column / Right column) -----
         self.main_split = QSplitter(Qt.Horizontal)
         self.main_split.addWidget(self.left_split)
-        self.main_split.addWidget(self.right_split)
-        self.main_split.setChildrenCollapsible(False)
+        self.main_split.addWidget(self.tam)
         self.main_split.setHandleWidth(8)
-        self.main_split.setStretchFactor(0, 4)      
-        self.main_split.setStretchFactor(1, 6)      
+        self.main_split.setStretchFactor(0, 1)
+        self.main_split.setStretchFactor(1, 1)      
 
         # ----- Central widget & margins -----
         container = QWidget()

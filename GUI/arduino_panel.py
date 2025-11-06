@@ -71,6 +71,8 @@ class ArduinoPanel(Panel):
         self.btn_connect.clicked.connect(self.start_recording)
         self.btn_disconnect = QPushButton("Disconnect")
         self.lbl_status = QLabel("Disconnected")
+        self.btn_disconnect.clicked.connect(self.stop_recording)
+        self.btn_disconnect.setObjectName("redButton")
 
         connect_row = QHBoxLayout()
         connect_row.addWidget(self.btn_connect)
@@ -112,12 +114,14 @@ class ArduinoPanel(Panel):
 
         # ----------- Arduino info ------------
         self.arduino = Sensors("/dev/arduino", baudrate=115200, timeout=1.0)
-        self.sample_time = 1.0
+        self.sample_time = 1.0 
 
     def start_recording(self):
         self.recorder_stop_evt = threading.Event()
         try:
             self.arduino.connect()
+            self.lbl_status.setText("Connected")
+
         except serial.SerialException as e:
             print(f"Failed to connect: {e}")
 
@@ -131,6 +135,7 @@ class ArduinoPanel(Panel):
             self.recording_thread.join(timeout=1)
         if self.arduino:
             self.arduino.close()
+            self.lbl_status.setText("Disconnected")
 
 
     def record(self):
@@ -142,15 +147,15 @@ class ArduinoPanel(Panel):
             except Exception as e:
                 print(f"Recording Error: {e}")
 
-            self.ambtemp_lbl.setText(f"Ambient Temp: {data['Ambient Temperature']:.1f}°C")
-            self.rH_lbl.setText(f"Relative Humidity: {data['Relative Humidity']:.1f}%")
-            self.dewpoint_lbl.setText(f"Dew Point: {data['Dewpoint']:.1f}°C")
+            self.ambtemp_lbl.setText(f"Ambient Temp: {data['Ambient Temperature']}°C")
+            self.rH_lbl.setText(f"Relative Humidity: {data['Relative Humidity']}%")
+            self.dewpoint_lbl.setText(f"Dew Point: {data['Dewpoint']}°C")
             self.dhtstatus_lbl.setText(f"DHT Status: {'OK' if data['DHT Status'] else 'FAULT'}")
             self.door_lbl.setText(f"Door: {'OPEN' if data['Door Status'] else 'CLOSED'}")
             self.leak_lbl.setText(f"Leak: {'YES' if data['Leak Status'] else 'NO'}")
-            self.TC1_lbl.setText(f"TC1 Temp: {data['TC Temperatures'][0]:.1f}°C")
+            self.TC1_lbl.setText(f"TC1 Temp: {data['TC Temperatures'][0]}°C")
             self.TC1_fault_lbl.setText(f"TC1 Faults: {', '.join(data['TC Faults'][0]) if data['TC Faults'][0] != ['OK'] else 'OK'}")
-            self.TC2_lbl.setText(f"TC2 Temp: {data['TC Temperatures'][1]:.1f}°C")
+            self.TC2_lbl.setText(f"TC2 Temp: {data['TC Temperatures'][1]}°C")
             self.TC2_fault_lbl.setText(f"TC2 Faults: {', '.join(data['TC Faults'][1]) if data['TC Faults'][1] != ['OK'] else 'OK'}") 
 
             time.sleep(self.sample_time)

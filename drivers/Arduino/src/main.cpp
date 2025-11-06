@@ -49,7 +49,7 @@ void setup() {
 }
 
 void loop() {
-
+  delay(2000);
   dht.read();
   float ambient_temperature = dht.getTemperature();
   float humidity = dht.getHumidity();

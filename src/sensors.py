@@ -48,28 +48,28 @@ class Sensors:
         
     def get_ambtemp(self):
         response = self.send("GetAmbTemp")
-        self.ambtemp = float(response)
+        self.ambtemp = float(response) if response else 'ERR'
         return self.ambtemp
     
     def get_rH(self):
         response = self.send("GetrH")
-        self.rH = float(response)
+        self.rH = float(response) if response else 'ERR'
         return self.rH
     
     def get_door(self):
         response = self.send("GetDoor")
-        self.door = bool(int(response))
+        self.door = bool(float(response)) if response else 'ERR'
         return self.door
     
     def get_leak(self):
         response = self.send("GetLeak")
-        self.leak = bool(int(response))
+        self.leak = bool(float(response)) if response else 'ERR'
         return self.leak
 
     def get_TCtemps(self):
         response1 = self.send("GetTC1Temp")
         response2 = self.send("GetTC2Temp")
-        self.TCtemps = [float(response1), float(response2)]
+        self.TCtemps = [float(response1) if response1 else 'ERR', float(response2) if response2 else 'ERR']
         return self.TCtemps
     
     def get_TCfaults(self):
@@ -80,30 +80,68 @@ class Sensors:
     
     def get_dhtstatus(self):
         response = self.send("GetDHTStatus")
-        self.dhtstatus = bool(int(response))
+        self.dhtstatus = bool(float(response)) if response else 'ERR'
         return self.dhtstatus
 
     def restart_dht(self):
         response = self.send("RestartDHT")
-        self.dhtstatus = bool(response)
+        self.dhtstatus = bool(response) if response else 'ERR'
         return self.dhtstatus
         
     def get_dewpoint(self):
         self.rH = self.get_rH()
         self.ambtemp = self.get_ambtemp()
-        self.dewpoint = self.ambtemp - (100 - self.rH)/5
+        if self.rH != 'ERR' and self.ambtemp != 'ERR':
+            self.dewpoint = self.ambtemp - (100 - self.rH)/5
+        else:
+            self.dewpoint = 'ERR'
         return self.dewpoint
     
     def update_all(self):
-        self.get_ambtemp()
-        self.get_dhtstatus()
-        self.get_rH()
-        self.get_door()
-        self.get_leak()
-        self.get_TCfaults()
-        self.get_TCtemps()
-        self.get_dewpoint()
-        self.check_serial_connected()
+        try:
+            self.get_ambtemp()
+        except Exception as e:
+            print(f"Ambient temperature read failed: {e}")
+
+        try:
+            self.get_dhtstatus()
+        except Exception as e:
+            print(f"DHT22 status read failed: {e}")
+
+        try:
+            self.get_rH()
+        except Exception as e:
+            print(f"Relative humidity read failed: {e}")
+
+        try:
+            self.get_door()
+        except Exception as e:
+            print(f"Door sensor read failed: {e}")
+
+        try:
+            self.get_leak()
+        except Exception as e:
+            print(f"Leak sensor read failed: {e}")
+
+        try:
+            self.get_TCfaults()
+        except Exception as e:
+            print(f"Thermocouple fault read failed: {e}")
+
+        try:
+            self.get_TCtemps()
+        except Exception as e:
+            print(f"Thermocouple temperatures read failed: {e}")
+
+        try:
+            self.get_dewpoint()
+        except Exception as e:
+            print(f"Dewpoint calculation failed: {e}")
+
+        try:
+            self.check_serial_connected()
+        except Exception as e:
+            print(f"Serial connection status read failed: {e}")
     
     def package(self):
         self.update_all()

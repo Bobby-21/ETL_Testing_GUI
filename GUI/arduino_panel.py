@@ -142,8 +142,7 @@ class ArduinoPanel(Panel):
         while not self.recorder_stop_evt.is_set():
 
             try:
-                self.arduino.update_all()
-                data = self.arduino.package()
+                data = self.arduino.get_data()
             except Exception as e:
                 print(f"Recording Error: {e}")
 

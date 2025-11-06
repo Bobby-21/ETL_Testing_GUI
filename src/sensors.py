@@ -15,6 +15,17 @@ class Sensors:
         self.leak = None
         self.TCtemps = [None, None]
         self.TCfaults = [None, None]
+        self.TCFaultNames= [
+            "Open Circuit",   # bit 0
+            "TC Voltage OOR", # bit 1
+            "TC Temp Low",    # bit 2
+            "TC Temp High",   # bit 3
+            "CJ Temp Low",    # bit 4
+            "CJ Temp High",   # bit 5
+            "TC Temp OOR",    # bit 6
+            "CJ Temp OOR",    # bit 7
+        ]
+
         self.dewpoint = None
 
         self.is_connected = False
@@ -96,6 +107,52 @@ class Sensors:
         else:
             self.dewpoint = 'ERR'
         return self.dewpoint
+    
+    def get_data(self):
+        # ambtemp, rH, dhtstatus, door, leak, TCtemp1, TCtemp2, TCfault1, TCfault2, dewpoint, is_connected
+        response = self.send("GetData")
+        data_list = response.split(",")
+        self.ambtemp = float(data_list[0]) if data_list[0] else 'ERR'
+        self.rH = float(data_list[1]) if data_list[1] else 'ERR'
+        self.dhtstatus = bool(float(data_list[2])) if data_list[2] else 'ERR'
+        self.door = bool(float(data_list[3])) if data_list[3] else 'ERR'
+        self.leak = bool(float(data_list[4])) if data_list[4] else 'ERR'
+        self.TCtemps = [float(data_list[5]) if data_list[5] else 'ERR', float(data_list[6]) if data_list[6] else 'ERR']
+        TC1faultbyte = int(data_list[7]) if data_list[7] else 0
+        TC2faultbyte = int(data_list[8]) if data_list[8] else 0
+        if TC1faultbyte == 0:
+            self.TCfaults[0] = "No Faults"
+        else:
+            self.TCfaults[0] = [name for i, name in enumerate(self.TCFaultNames) if (TC1faultbyte & (1 << i))].join(", ")
+
+        if TC2faultbyte == 0:
+            self.TCfaults[1] = "No Faults"
+        else:
+            self.TCfaults[1] = [name for i, name in enumerate(self.TCFaultNames) if (TC2faultbyte & (1 << i))].join(", ")
+
+        if self.ambtemp != 'ERR' and self.rH != 'ERR':
+            self.dewpoint = self.ambtemp - (100 - self.rH)/5
+        else:
+            self.dewpoint = 'ERR'
+        
+        if self.ser and self.ser.is_open:
+            self.is_connected = True
+        else:
+            self.is_connected = False
+
+        data = {
+            "Ambient Temperature": self.ambtemp, 
+            "Relative Humidity": self.rH,
+            "DHT Status": self.dhtstatus,
+            "Door Status": self.door,
+            "Leak Status": self.leak,
+            "TC Temperatures": self.TCtemps,
+            "TC Faults": self.TCfaults,
+            "Dewpoint": self.dewpoint,
+            "Connected": self.is_connected
+        }
+
+        return data
     
     def update_all(self):
         try:

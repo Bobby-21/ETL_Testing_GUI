@@ -63,12 +63,30 @@ void loop() {
 
   int door_state = digitalRead(door_pin); // 1 = closed
   int leak_state = digitalRead(leak_pin); // 1 = leaking
-  
+
 
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
     input.trim();
 
+    if (input == "GetData") {
+      Serial.print(ambient_temperature);
+      Serial.print(",");
+      Serial.print(humidity);
+      Serial.print(",");
+      Serial.print(dhtstatus);
+      Serial.print(",");
+      Serial.print(door_state);
+      Serial.print(",");
+      Serial.print(leak_state);
+      for (int i = 0; i < NUM_PROBES; i++) {
+        Serial.print(",");
+        Serial.print(temps[i]);
+        Serial.print(",");
+        Serial.print(fault_bytes[i]);
+      }
+      Serial.println();
+    }
     if (input == "GetAmbTemp") {
       Serial.println(ambient_temperature);
     }

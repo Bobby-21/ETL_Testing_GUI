@@ -68,18 +68,11 @@ class MainWindow(QMainWindow):
         right_w = total_w - left_w
         self.main_split.setSizes([left_w, right_w])
 
-        # Left split: Arduino/Chiller/HV equal heights 1:1:1
+        # Left split: Arduino/HV equal heights 1:1
         total_h_left = self.left_split.height() or (self.height() - 32)
-        unit = total_h_left // 5
-        h2 = int(2 * unit)
-        h1 = int(1 * unit)
-        self.left_split.setSizes([h1, h2, total_h_left - 2*(h1 + h2)])
-
-        # Right split: Tamalero/Terminal ~ 7:3
-        total_h_right = self.right_split.height() or (self.height() - 32)
-        h7 = int(total_h_right * 0.7)
-        h3 = total_h_right - h7
-        self.right_split.setSizes([h7, h3])
+        lefth1 = total_h_left // 2
+        lefth2 = total_h_left - lefth1
+        self.left_split.setSizes([lefth1, lefth2])
 
 
 if __name__ == "__main__":

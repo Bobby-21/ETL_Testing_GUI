@@ -162,7 +162,7 @@ class Sensors:
                 print(f"Received data: {data_list}")
         else:
             print("No sensor data received")
-            return None
+            return data_list
     
     def update_all(self):
         try:

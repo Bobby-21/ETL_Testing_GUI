@@ -10,6 +10,7 @@ from panel import Panel
 import threading
 import serial
 import time
+import os
 
 MAIN_DIR = Path(__file__).parent.parent
 src_dir = MAIN_DIR / "src"
@@ -59,7 +60,13 @@ class ArduinoPanel(Panel):
         }
         QPushButton#redButton:hover { background-color: #ef5350; }
         QPushButton#redButton:pressed { background-color: #c62828; }
-
+                           
+        QPushButton#blueButton {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+        QPushButton#blueButton:hover { background-color: #339cff; }
+        QPushButton#blueButton:pressed { background-color: #0056b3; }
         """)
 
         # ---------- spacer row to avoid overlapping the title ----------
@@ -74,19 +81,32 @@ class ArduinoPanel(Panel):
         self.recording_thread = None
         self.arduino = None
 
+        self.log_status = False
+        self.log_timestamp = None
+
         self.btn_connect = QPushButton("Connect")
         self.btn_connect.setObjectName("greenButton")
         self.btn_connect.clicked.connect(self.start_recording)
+
         self.btn_disconnect = QPushButton("Disconnect")
         self.lbl_status = QLabel("Disconnected")
         self.btn_disconnect.clicked.connect(self.stop_recording)
         self.btn_disconnect.setObjectName("redButton")
+
+        self.btn_logging = QPushButton("Toggle Logging")
+        self.btn_logging.setObjectName("blueButton")
+        self.btn_logging.clicked.connect(self.toggle_log)
+        self.lbl_logging = QLabel("Not Logging")
+
+
 
         connect_row = QHBoxLayout()
         connect_row.addWidget(self.btn_connect)
         
         connect_row.addWidget(self.btn_disconnect)
         connect_row.addWidget(self.lbl_status, 1, Qt.AlignLeft)
+        connect_row.addWidget(self.btn_logging)
+        connect_row.addWidget(self.lbl_logging)
 
         # ---------- sensor/status labels ----------
         def make_label(text):
@@ -164,5 +184,24 @@ class ArduinoPanel(Panel):
             except Exception as e:
                 print(f"Sensor data display failure: {e}")
 
+            if self.log_status:
+                timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+                maindir = Path(__file__).parent.parent
 
-        
+                resultdir = maindir / "Sensor Data"
+                if not os.path.isdir(resultdir):
+                    os.makedirs(resultdir)
+
+                resultdir.mkdir(exist_ok=True)
+
+                outfile = resultdir / f"sensor_data_{self.log_timestamp}.csv"
+                with open(outfile, 'a') as f:
+                    f.write(f"{timestamp}: {data}\n")
+
+    def toggle_log(self):
+        self.log_status = not self.log_status
+        if self.log_status:
+            self.lbl_logging.setText("Logging")
+            self.log_timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+        else:
+            self.lbl_logging.setText("Not Logging")

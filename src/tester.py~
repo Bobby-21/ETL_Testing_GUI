@@ -6,7 +6,7 @@ def run_uv_script(script_path, test_name, kcu_ip, moduleid, qinj, charges):
     cmd = ["uv", "run", "python3", str(script_path), "--kcu", str(kcu_ip)]
 
     if test_name == "tamalero":
-        cmd += ["--power_up"]
+        cmd += ["--power_up", "--adcs", "--verbose"]
     elif test_name == "module":
         cmd += ["--test_chip", "--moduleid", str(moduleid)]
         if qinj:

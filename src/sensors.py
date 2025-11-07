@@ -51,7 +51,9 @@ class Sensors:
     
     def send(self, cmd):
         if self.ser and self.ser.is_open:
+            self.ser.reset_input_buffer()
             self.ser.write((cmd + "\n").encode())
+            time.sleep(1)
             line = self.ser.readline().decode().strip()
             return line
         else:
@@ -112,47 +114,55 @@ class Sensors:
         # ambtemp, rH, dhtstatus, door, leak, TCtemp1, TCtemp2, TCfault1, TCfault2, dewpoint, is_connected
         response = self.send("GetData")
         data_list = response.split(",")
-        self.ambtemp = float(data_list[0]) if data_list[0] else 'ERR'
-        self.rH = float(data_list[1]) if data_list[1] else 'ERR'
-        self.dhtstatus = bool(float(data_list[2])) if data_list[2] else 'ERR'
-        self.door = bool(float(data_list[3])) if data_list[3] else 'ERR'
-        self.leak = bool(float(data_list[4])) if data_list[4] else 'ERR'
-        self.TCtemps = [float(data_list[5]) if data_list[5] else 'ERR', float(data_list[6]) if data_list[6] else 'ERR']
-        TC1faultbyte = int(data_list[7]) if data_list[7] else 0
-        TC2faultbyte = int(data_list[8]) if data_list[8] else 0
-        if TC1faultbyte == 0:
-            self.TCfaults[0] = "No Faults"
-        else:
-            self.TCfaults[0] = [name for i, name in enumerate(self.TCFaultNames) if (TC1faultbyte & (1 << i))].join(", ")
+        if data_list != ['']:
+            try:
+                self.ambtemp = float(data_list[0]) if data_list[0] else 'ERR'
+                self.rH = float(data_list[1]) if data_list[1] else 'ERR'
+                self.dhtstatus = bool(float(data_list[2])) if data_list[2] else 'ERR'
+                self.door = bool(float(data_list[3])) if data_list[3] else 'ERR'
+                self.leak = bool(float(data_list[4])) if data_list[4] else 'ERR'
+                self.TCtemps = [float(data_list[5]) if data_list[5] else 'ERR', float(data_list[7]) if data_list[7] else 'ERR']
+                TC1faultbyte = int(data_list[6]) if data_list[7] else 0
+                TC2faultbyte = int(data_list[8]) if data_list[8] else 0
+                if TC1faultbyte == 0:
+                    self.TCfaults[0] = "No Faults"
+                else:
+                    self.TCfaults[0] = [name for i, name in enumerate(self.TCFaultNames) if (TC1faultbyte & (1 << i))].join(", ")
 
-        if TC2faultbyte == 0:
-            self.TCfaults[1] = "No Faults"
-        else:
-            self.TCfaults[1] = [name for i, name in enumerate(self.TCFaultNames) if (TC2faultbyte & (1 << i))].join(", ")
+                if TC2faultbyte == 0:
+                    self.TCfaults[1] = "No Faults"
+                else:
+                    self.TCfaults[1] = [name for i, name in enumerate(self.TCFaultNames) if (TC2faultbyte & (1 << i))].join(", ")
 
-        if self.ambtemp != 'ERR' and self.rH != 'ERR':
-            self.dewpoint = self.ambtemp - (100 - self.rH)/5
-        else:
-            self.dewpoint = 'ERR'
+                if self.ambtemp != 'ERR' and self.rH != 'ERR':
+                    self.dewpoint = round(self.ambtemp - (100 - self.rH)/5, 2)
+                else:
+                    self.dewpoint = 'ERR'
         
-        if self.ser and self.ser.is_open:
-            self.is_connected = True
+                if self.ser and self.ser.is_open:
+                    self.is_connected = True
+                else:
+                    self.is_connected = False
+
+                data = {
+                    "Ambient Temperature": self.ambtemp, 
+                    "Relative Humidity": self.rH,
+                    "DHT Status": self.dhtstatus,
+                    "Door Status": self.door,
+                    "Leak Status": self.leak,
+                    "TC Temperatures": self.TCtemps,
+                    "TC Faults": self.TCfaults,
+                    "Dewpoint": self.dewpoint,
+                    "Connected": self.is_connected
+                }
+
+                return data
+            except Exception as e:
+                print(f"Arduino sensor read failed: {e}")
+                print(f"Received data: {data_list}")
         else:
-            self.is_connected = False
-
-        data = {
-            "Ambient Temperature": self.ambtemp, 
-            "Relative Humidity": self.rH,
-            "DHT Status": self.dhtstatus,
-            "Door Status": self.door,
-            "Leak Status": self.leak,
-            "TC Temperatures": self.TCtemps,
-            "TC Faults": self.TCfaults,
-            "Dewpoint": self.dewpoint,
-            "Connected": self.is_connected
-        }
-
-        return data
+            print("No sensor data received")
+            return None
     
     def update_all(self):
         try:

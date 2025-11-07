@@ -79,13 +79,13 @@ class TamaleroClient(QObject):
     def start(self, start_timeout: float = 4.0) -> None:
         """Start the worker process; it will wait for commands."""
         args = ["-u", str(self._worker_path)]
-        self._seen_ready = False
-        self._start_timeout_ms = max(500, int(start_timeout * 1000))
-        self._start_timer.start(self._start_timeout_ms)
+        # self._seen_ready = False
+        # self._start_timeout_ms = 30000
+        # self._start_timer.start(self._start_timeout_ms)
         self._p.start(sys.executable, args, cwd=str(self._cwd))
 
     def stop(self, grace_ms: int = 800) -> None:
-        self._start_timer.stop()
+        # self._start_timer.stop()
         self._p.send({"cmd": "stop"})
         self._p.stop(grace_ms)
 
@@ -134,7 +134,7 @@ class TamaleroClient(QObject):
         et = msg.get("event")
         if et == "ready":
             self._seen_ready = True
-            self._start_timer.stop()
+            #self._start_timer.stop()
             self.ready.emit()
         elif et == "status":
             self.status.emit(msg)

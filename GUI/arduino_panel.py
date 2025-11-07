@@ -47,11 +47,19 @@ class ArduinoPanel(Panel):
         QPushButton:disabled { color: #9aa5b1; }
 
         QPushButton#greenButton {
-            background-color: #22c55e;
+            background-color: #16a34a;
             color: #ffffff;
         }
-        QPushButton#greenButton:hover { background-color: #16a34a; }
+        QPushButton#greenButton:hover { background-color: #22c55e; }
         QPushButton#greenButton:pressed { background-color: #15803d; }
+
+        QPushButton#redButton {
+            background-color: #e53935;
+            color: #ffffff;
+        }
+        QPushButton#redButton:hover { background-color: #ef5350; }
+        QPushButton#redButton:pressed { background-color: #c62828; }
+
         """)
 
         # ---------- spacer row to avoid overlapping the title ----------
@@ -114,7 +122,7 @@ class ArduinoPanel(Panel):
 
         # ----------- Arduino info ------------
         self.arduino = Sensors("/dev/arduino", baudrate=115200, timeout=1.0)
-        self.sample_time = 1.0 
+        self.sample_time = 1
 
     def start_recording(self):
         self.recorder_stop_evt = threading.Event()
@@ -140,24 +148,21 @@ class ArduinoPanel(Panel):
 
     def record(self):
         while not self.recorder_stop_evt.is_set():
-
+            time.sleep(self.sample_time)
             try:
                 data = self.arduino.get_data()
+                self.ambtemp_lbl.setText(f"Ambient Temp: {self.arduino.ambtemp}°C")
+                self.rH_lbl.setText(f"Relative Humidity: {self.arduino.rH}%")
+                self.dewpoint_lbl.setText(f"Dew Point: {self.arduino.dewpoint}°C")
+                self.dhtstatus_lbl.setText(f"DHT Status: {'OK' if self.arduino.dhtstatus else 'FAULT'}")
+                self.door_lbl.setText(f"Door: {'OPEN' if self.arduino.door else 'CLOSED'}")
+                self.leak_lbl.setText(f"Leak: {'YES' if self.arduino.leak else 'NO'}")
+                self.TC1_lbl.setText(f"TC1 Temp: {self.arduino.TCtemps[0]}°C")
+                self.TC1_fault_lbl.setText(f"TC1 Faults: {', '.join(self.arduino.TCfaults[0]) if self.arduino.TCfaults[0] != 'No Faults' else 'No Faults'}")
+                self.TC2_lbl.setText(f"TC2 Temp: {self.arduino.TCtemps[1]}°C")
+                self.TC2_fault_lbl.setText(f"TC2 Faults: {', '.join(self.arduino.TCfaults[1]) if self.arduino.TCfaults[1] != 'No Faults' else 'No Faults'}") 
             except Exception as e:
-                print(f"Recording Error: {e}")
-
-            self.ambtemp_lbl.setText(f"Ambient Temp: {data['Ambient Temperature']}°C")
-            self.rH_lbl.setText(f"Relative Humidity: {data['Relative Humidity']}%")
-            self.dewpoint_lbl.setText(f"Dew Point: {data['Dewpoint']}°C")
-            self.dhtstatus_lbl.setText(f"DHT Status: {'OK' if data['DHT Status'] else 'FAULT'}")
-            self.door_lbl.setText(f"Door: {'OPEN' if data['Door Status'] else 'CLOSED'}")
-            self.leak_lbl.setText(f"Leak: {'YES' if data['Leak Status'] else 'NO'}")
-            self.TC1_lbl.setText(f"TC1 Temp: {data['TC Temperatures'][0]}°C")
-            self.TC1_fault_lbl.setText(f"TC1 Faults: {', '.join(data['TC Faults'][0]) if data['TC Faults'][0] != ['OK'] else 'OK'}")
-            self.TC2_lbl.setText(f"TC2 Temp: {data['TC Temperatures'][1]}°C")
-            self.TC2_fault_lbl.setText(f"TC2 Faults: {', '.join(data['TC Faults'][1]) if data['TC Faults'][1] != ['OK'] else 'OK'}") 
-
-            time.sleep(self.sample_time)
+                print(f"Sensor data display failure: {e}")
 
 
         

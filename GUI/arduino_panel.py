@@ -122,7 +122,7 @@ class ArduinoPanel(Panel):
 
         # ----------- Arduino info ------------
         self.arduino = Sensors("/dev/arduino", baudrate=115200, timeout=1.0)
-        self.sample_time = 1
+        self.sample_time = 2
 
     def start_recording(self):
         self.recorder_stop_evt = threading.Event()

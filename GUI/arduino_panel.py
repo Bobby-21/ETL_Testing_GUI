@@ -72,7 +72,6 @@ class ArduinoPanel(Panel):
         # ---------- spacer row to avoid overlapping the title ----------
         top_pad = max(24, self.fontMetrics().height() + 8)
         self.subgrid.setRowMinimumHeight(0, top_pad)
-        row0 = 1
 
         # ---------- form: connect/disconnect/status ----------
         form = QFormLayout()
@@ -89,20 +88,18 @@ class ArduinoPanel(Panel):
         self.btn_connect.clicked.connect(self.start_recording)
 
         self.btn_disconnect = QPushButton("Disconnect")
-        self.lbl_status = QLabel("Disconnected")
-        self.btn_disconnect.clicked.connect(self.stop_recording)
         self.btn_disconnect.setObjectName("redButton")
+        self.btn_disconnect.clicked.connect(self.stop_recording)
+
+        self.lbl_status = QLabel("Disconnected")
 
         self.btn_logging = QPushButton("Toggle Logging")
         self.btn_logging.setObjectName("blueButton")
         self.btn_logging.clicked.connect(self.toggle_log)
         self.lbl_logging = QLabel("Not Logging")
 
-
-
         connect_row = QHBoxLayout()
         connect_row.addWidget(self.btn_connect)
-        
         connect_row.addWidget(self.btn_disconnect)
         connect_row.addWidget(self.lbl_status, 1, Qt.AlignLeft)
         connect_row.addWidget(self.btn_logging)
@@ -126,25 +123,29 @@ class ArduinoPanel(Panel):
         self.TC2_fault_lbl = make_label("TC2 Faults: --")
 
         # ---------- layout into subgrid ----------
-        self.subgrid.addLayout(form,       row0 + 0, 0)
-        self.subgrid.addLayout(connect_row,row0 + 1, 0)
-        self.subgrid.addWidget(self.ambtemp_lbl,   row0 + 2, 0)
-        self.subgrid.addWidget(self.rH_lbl,        row0 + 3, 0)
-        self.subgrid.addWidget(self.dewpoint_lbl,  row0 + 4, 0)
-        self.subgrid.addWidget(self.dhtstatus_lbl, row0 + 5, 0)
-        self.subgrid.addWidget(self.door_lbl,      row0 + 6, 0)
-        self.subgrid.addWidget(self.leak_lbl,      row0 + 7, 0)
-        self.subgrid.addWidget(self.TC1_lbl,       row0 + 8, 0)
-        self.subgrid.addWidget(self.TC1_fault_lbl, row0 + 9, 0)
-        self.subgrid.addWidget(self.TC2_lbl,       row0 + 10, 0)
-        self.subgrid.addWidget(self.TC2_fault_lbl, row0 + 11, 0)
-        self.subgrid.setRowStretch(row0 + 11, 1)
+        self.subgrid.addLayout(form, 0, 0)
+        self.subgrid.addLayout(connect_row, 1, 0)
+        self.subgrid.addWidget(self.ambtemp_lbl, 2, 0)
+        self.subgrid.addWidget(self.rH_lbl, 3, 0)
+        self.subgrid.addWidget(self.dewpoint_lbl, 4, 0)
+        self.subgrid.addWidget(self.dhtstatus_lbl, 5, 0)
+        self.subgrid.addWidget(self.door_lbl, 6, 0)
+        self.subgrid.addWidget(self.leak_lbl, 7, 0)
+        self.subgrid.addWidget(self.TC1_lbl, 8, 0)
+        self.subgrid.addWidget(self.TC1_fault_lbl, 9, 0)
+        self.subgrid.addWidget(self.TC2_lbl, 10, 0)
+        self.subgrid.addWidget(self.TC2_fault_lbl, 11, 0)
+        self.subgrid.setRowStretch(12, 1)
 
         # ----------- Arduino info ------------
-        self.arduino = Sensors("/dev/arduino", baudrate=115200, timeout=1.0)
+        self.arduino = Sensors("COM6", baudrate=115200, timeout=1.0)
         self.sample_time = 2
 
     def start_recording(self):
+        if self.recording_thread != None:
+            print("Recording thread already running")
+            return
+        
         self.recorder_stop_evt = threading.Event()
         try:
             self.arduino.connect()
@@ -158,6 +159,10 @@ class ArduinoPanel(Panel):
         self.recording_thread.start()
 
     def stop_recording(self):
+        if not self.recording_thread == None:
+            print("Recording thread not running")
+            return
+
         self.recorder_stop_evt.set()
         if self.recording_thread:
             self.recording_thread.join(timeout=1)

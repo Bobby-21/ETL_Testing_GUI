@@ -112,6 +112,7 @@ class Sensors:
     
     def get_data(self):
         # ambtemp, rH, dhtstatus, door, leak, TCtemp1, TCtemp2, TCfault1, TCfault2, dewpoint, is_connected
+        # FIXME add prefix for data string (something like "DATA:x,x,x,x,...") so we can verify data before parsing
         response = self.send("GetData")
         data_list = response.split(",")
         if data_list != ['']:

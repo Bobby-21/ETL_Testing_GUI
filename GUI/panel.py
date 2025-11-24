@@ -19,9 +19,12 @@ class Panel(QFrame):
         title_lbl.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         title_lbl.setStyleSheet("""
                                 font-weight: 600;
-                                color: #eeeeee;
+                                color: #FFFFFF;
                                 """)
         title_lbl.setFont(QFont("Calibri", 15))
         subgrid.addWidget(title_lbl, 0, 0, 1, -1, alignment=Qt.AlignHCenter)
+
+        subgrid.setRowStretch(0, 0)
+        subgrid.setRowStretch(1, 1)
 
         self.subgrid = subgrid

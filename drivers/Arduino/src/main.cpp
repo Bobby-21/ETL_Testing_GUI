@@ -55,91 +55,38 @@ void loop() {
     input.trim();
 
     if (input == "GetData") {
-      dht.read();
-      float ambient_temperature = dht.getTemperature();
-      float humidity = dht.getHumidity();
-      bool dhtstatus = dht.isConnected();
+      int door_state = digitalRead(door_pin); // 1 = closed
+      int leak_state = digitalRead(leak_pin); // 1 = leaking
+
+      Serial.print("DATA,");
+      Serial.print(door_state);
+      Serial.print(",");
+      Serial.print(leak_state);
+      Serial.print(",");
+
 
       for (int i=0; i<NUM_PROBES; i++) {
         tcs[i].sample();
         temps[i] = tcs[i].getTemperature();
         fault_bytes[i] = tcs[i].getStatus();
+        Serial.print(temps[i]);
+        Serial.print(",");
+        Serial.print(fault_bytes[i]);
+        Serial.print(",");
       }
 
-      int door_state = digitalRead(door_pin); // 1 = closed
-      int leak_state = digitalRead(leak_pin); // 1 = leaking
+      dht.read();
+      float ambient_temperature = dht.getTemperature();
+      float humidity = dht.getHumidity();
+      bool dhtstatus = dht.isConnected();
 
-    
       Serial.print(ambient_temperature);
       Serial.print(",");
       Serial.print(humidity);
       Serial.print(",");
       Serial.print(dhtstatus);
-      Serial.print(",");
-      Serial.print(door_state);
-      Serial.print(",");
-      Serial.print(leak_state);
-      for (int i = 0; i < NUM_PROBES; i++) {
-        Serial.print(",");
-        Serial.print(temps[i]);
-        Serial.print(",");
-        Serial.print(fault_bytes[i]);
-      }
-      Serial.println();
+      Serial.println(",DONE");
     }
-    // if (input == "GetAmbTemp") {
-    //   Serial.println(ambient_temperature);
-    // }
-    // if (input == "GetrH") {
-    //   Serial.println(humidity);
-    // }
-    // if (input == "GetLeak") {
-    //   Serial.println(leak_state);
-    // }
-    // if (input == "GetDoor") {
-    //   Serial.println(door_state);
-    // }
-    // if (input == "GetTC1Temp") {
-    //   Serial.println(temps[0]);
-    // }
-    // if (input == "GetTC2Temp") {
-    //   Serial.println(temps[1]);
-    // }
-    // if (input == "GetTC1Status") {
-    //   if (fault_bytes[0] == 0){
-    //     Serial.println("Good");
-    //   }
-    //   else {
-    //     Serial.print("Faulted,");
-    //     for (int i = 0; i < 8; i++) {
-    //       if (fault_bytes[0] & (1 << i)) {
-    //         Serial.print(fault_names[i]);
-    //         Serial.print(",");
-    //       }
-    //     }
-    //     Serial.println();
-    //   }
-    // }
-
-    // if (input == "GetTC2Status") {
-    //   if (fault_bytes[1] == 0){
-    //     Serial.println("Good");
-    //   }
-    //   else {
-    //     Serial.print("Faulted,");
-    //     for (int i = 0; i < 8; i++) {
-    //       if (fault_bytes[1] & (1 << i)) {
-    //         Serial.print(fault_names[i]);
-    //         Serial.print(",");
-    //       }
-    //     }
-    //     Serial.println();
-    //   }
-    // }
-    
-    // if (input == "GetDHTStatus") {
-    //   Serial.println(dhtstatus);
-    // }
 
     if (input == "RestartDHT") {
       dht.begin();

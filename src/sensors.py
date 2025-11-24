@@ -32,7 +32,6 @@ class Sensors:
 
     def connect(self):
         self.ser = serial.Serial(self.port, self.baud, timeout=self.timeout)
-        time.sleep(2)
         return self.ser.is_open
     
     def close(self):
@@ -53,166 +52,117 @@ class Sensors:
         if self.ser and self.ser.is_open:
             self.ser.reset_input_buffer()
             self.ser.write((cmd + "\n").encode())
-            time.sleep(1)
+            self.ser.flush()
             line = self.ser.readline().decode().strip()
             return line
         else:
             raise RuntimeError("Serial not open, call connect() first")
-        
-    def get_ambtemp(self):
-        response = self.send("GetAmbTemp")
-        self.ambtemp = float(response) if response else 'ERR'
-        return self.ambtemp
-    
-    def get_rH(self):
-        response = self.send("GetrH")
-        self.rH = float(response) if response else 'ERR'
-        return self.rH
-    
-    def get_door(self):
-        response = self.send("GetDoor")
-        self.door = bool(float(response)) if response else 'ERR'
-        return self.door
-    
-    def get_leak(self):
-        response = self.send("GetLeak")
-        self.leak = bool(float(response)) if response else 'ERR'
-        return self.leak
-
-    def get_TCtemps(self):
-        response1 = self.send("GetTC1Temp")
-        response2 = self.send("GetTC2Temp")
-        self.TCtemps = [float(response1) if response1 else 'ERR', float(response2) if response2 else 'ERR']
-        return self.TCtemps
-    
-    def get_TCfaults(self):
-        response1 = self.send("GetTC1Status")
-        response2 = self.send("GetTC2Status")
-        self.TCfaults = [response1.strip().split(","), response2.strip().split(",")]
-        return self.TCfaults
-    
-    def get_dhtstatus(self):
-        response = self.send("GetDHTStatus")
-        self.dhtstatus = bool(float(response)) if response else 'ERR'
-        return self.dhtstatus
 
     def restart_dht(self):
         response = self.send("RestartDHT")
-        self.dhtstatus = bool(response) if response else 'ERR'
+        self.dhtstatus = bool(response)
         return self.dhtstatus
-        
-    def get_dewpoint(self):
-        self.rH = self.get_rH()
-        self.ambtemp = self.get_ambtemp()
-        if self.rH != 'ERR' and self.ambtemp != 'ERR':
-            self.dewpoint = self.ambtemp - (100 - self.rH)/5
-        else:
-            self.dewpoint = 'ERR'
-        return self.dewpoint
     
     def get_data(self):
-        # ambtemp, rH, dhtstatus, door, leak, TCtemp1, TCtemp2, TCfault1, TCfault2, dewpoint, is_connected
-        # FIXME add prefix for data string (something like "DATA:x,x,x,x,...") so we can verify data before parsing
+        # DATA, door, leak, TCtemp1, TCfault1, TCtemp2, TCfault2, ambtemp, rH, dhtstatus, DONE
         response = self.send("GetData")
         data_list = response.split(",")
-        if data_list != ['']:
-            try:
-                self.ambtemp = float(data_list[0]) if data_list[0] else 'ERR'
-                self.rH = float(data_list[1]) if data_list[1] else 'ERR'
-                self.dhtstatus = bool(float(data_list[2])) if data_list[2] else 'ERR'
-                self.door = bool(float(data_list[3])) if data_list[3] else 'ERR'
-                self.leak = bool(float(data_list[4])) if data_list[4] else 'ERR'
-                self.TCtemps = [float(data_list[5]) if data_list[5] else 'ERR', float(data_list[7]) if data_list[7] else 'ERR']
-                TC1faultbyte = int(data_list[6]) if data_list[7] else 0
-                TC2faultbyte = int(data_list[8]) if data_list[8] else 0
+        if data_list[0] == "DATA" and data_list[-1] == "DONE":
+            
+            self.door = bool(float(data_list[1]))
+            self.leak = bool(float(data_list[2]))
+
+            self.TCtemps = [float(data_list[3]), float(data_list[5])]
+            TC1faultbyte = int(data_list[4])
+            TC2faultbyte = int(data_list[6])
+            if TC1faultbyte == 0:
+                self.TCfaults[0] = "No Faults"
+            else:
+                self.TCfaults[0] = [name for i, name in enumerate(self.TCFaultNames) if (TC1faultbyte & (1 << i))].join(", ")
+
+            if TC2faultbyte == 0:
+                self.TCfaults[1] = "No Faults"
+            else:
+                self.TCfaults[1] = [name for i, name in enumerate(self.TCFaultNames) if (TC2faultbyte & (1 << i))].join(", ")
+
+            self.ambtemp = float(data_list[7])
+            self.rH = float(data_list[8])
+            self.dhtstatus = bool(float(data_list[9]))
+            
+
+            self.dewpoint = round(self.ambtemp - (100 - self.rH)/5, 2)
+    
+            if self.ser and self.ser.is_open:
+                self.is_connected = True
+            else:
+                self.is_connected = False
+        
+        elif data_list[0] == "DATA" and data_list[-1] != "DONE":
+            print("Partial data received")
+            print(data_list)
+            # Assume door and leak are always sent (digital reads, should never be missing)
+            last_index = len(data_list) - 2
+            self.door = bool(float(data_list[1]))
+            self.leak = bool(float(data_list[2]))
+
+            if last_index >= 3:
+                self.TCtemps[0] = float(data_list[3])
+            else:
+                self.TCtemps[0] = None
+
+            if last_index >= 4:
+                TC1faultbyte = int(data_list[6])
                 if TC1faultbyte == 0:
                     self.TCfaults[0] = "No Faults"
                 else:
                     self.TCfaults[0] = [name for i, name in enumerate(self.TCFaultNames) if (TC1faultbyte & (1 << i))].join(", ")
+            else: 
+                self.TCfaults[0] = None
+                
+            if last_index >= 5:
+                self.TCtemps[1] = float(data_list[4])
+            else:
+                self.TCtemps[1] = None
 
+            if last_index >= 6:
+                TC2faultbyte = int(data_list[5])
                 if TC2faultbyte == 0:
                     self.TCfaults[1] = "No Faults"
                 else:
                     self.TCfaults[1] = [name for i, name in enumerate(self.TCFaultNames) if (TC2faultbyte & (1 << i))].join(", ")
+            else:
+                self.TCfaults[1] = None
 
-                if self.ambtemp != 'ERR' and self.rH != 'ERR':
-                    self.dewpoint = round(self.ambtemp - (100 - self.rH)/5, 2)
-                else:
-                    self.dewpoint = 'ERR'
-        
-                if self.ser and self.ser.is_open:
-                    self.is_connected = True
-                else:
-                    self.is_connected = False
 
-                data = {
-                    "Ambient Temperature": self.ambtemp, 
-                    "Relative Humidity": self.rH,
-                    "DHT Status": self.dhtstatus,
-                    "Door Status": self.door,
-                    "Leak Status": self.leak,
-                    "TC Temperatures": self.TCtemps,
-                    "TC Faults": self.TCfaults,
-                    "Dewpoint": self.dewpoint,
-                    "Connected": self.is_connected
-                }
+            if last_index >= 7:
+                self.ambtemp = float(data_list[7])
+            else:
+                self.ambtemp = None
 
-                return data
-            except Exception as e:
-                print(f"Arduino sensor read failed: {e}")
-                print(f"Received data: {data_list}")
+            if last_index >= 8:
+                self.rH = float(data_list[8])
+            else:
+                self.rH = None
+
+            if last_index >= 9:
+                self.dhtstatus = bool(float(data_list[9]))
+            else:
+                self.dhtstatus = None
+
+            if last_index >= 8:
+                self.dewpoint = round(self.ambtemp - (100 - self.rH)/5, 2)
+            else:
+                self.dewpoint = None
+
+            if self.ser and self.ser.is_open:
+                self.is_connected = True
+            else:
+                self.is_connected = False
         else:
-            print("No sensor data received")
-            return data_list
-    
-    def update_all(self):
-        try:
-            self.get_ambtemp()
-        except Exception as e:
-            print(f"Ambient temperature read failed: {e}")
-
-        try:
-            self.get_dhtstatus()
-        except Exception as e:
-            print(f"DHT22 status read failed: {e}")
-
-        try:
-            self.get_rH()
-        except Exception as e:
-            print(f"Relative humidity read failed: {e}")
-
-        try:
-            self.get_door()
-        except Exception as e:
-            print(f"Door sensor read failed: {e}")
-
-        try:
-            self.get_leak()
-        except Exception as e:
-            print(f"Leak sensor read failed: {e}")
-
-        try:
-            self.get_TCfaults()
-        except Exception as e:
-            print(f"Thermocouple fault read failed: {e}")
-
-        try:
-            self.get_TCtemps()
-        except Exception as e:
-            print(f"Thermocouple temperatures read failed: {e}")
-
-        try:
-            self.get_dewpoint()
-        except Exception as e:
-            print(f"Dewpoint calculation failed: {e}")
-
-        try:
-            self.check_serial_connected()
-        except Exception as e:
-            print(f"Serial connection status read failed: {e}")
-    
-    def package(self):
-        self.update_all()
+            print("Invalid data received")
+            print(data_list)
+            return None
+        
         data = {
             "Ambient Temperature": self.ambtemp, 
             "Relative Humidity": self.rH,
@@ -224,4 +174,5 @@ class Sensors:
             "Dewpoint": self.dewpoint,
             "Connected": self.is_connected
         }
+
         return data

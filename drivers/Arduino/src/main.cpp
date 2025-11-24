@@ -45,7 +45,7 @@ void setup() {
     tcs[i].config(TYPE_T, CUTOFF_60HZ, AVG_SEL_4SAMP, CMODE_AUTO);
   }
 
-  Serial.setTimeout(10);
+  Serial.setTimeout(1000);
 }
 
 void loop() {

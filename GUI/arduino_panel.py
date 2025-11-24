@@ -139,7 +139,7 @@ class ArduinoPanel(Panel):
 
         # ----------- Arduino info ------------
         self.arduino = Sensors("COM6", baudrate=115200, timeout=1.0)
-        self.sample_time = 2
+        self.sample_time = 2.5
 
     def start_recording(self):
         if self.recording_thread != None:

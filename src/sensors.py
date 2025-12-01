@@ -111,7 +111,7 @@ class Sensors:
                 self.TCtemps[0] = None
 
             if last_index >= 4:
-                TC1faultbyte = int(data_list[6])
+                TC1faultbyte = int(data_list[4])
                 if TC1faultbyte == 0:
                     self.TCfaults[0] = "No Faults"
                 else:
@@ -120,12 +120,12 @@ class Sensors:
                 self.TCfaults[0] = None
                 
             if last_index >= 5:
-                self.TCtemps[1] = float(data_list[4])
+                self.TCtemps[1] = float(data_list[5])
             else:
                 self.TCtemps[1] = None
 
             if last_index >= 6:
-                TC2faultbyte = int(data_list[5])
+                TC2faultbyte = int(data_list[6])
                 if TC2faultbyte == 0:
                     self.TCfaults[1] = "No Faults"
                 else:
@@ -158,9 +158,11 @@ class Sensors:
                 self.is_connected = True
             else:
                 self.is_connected = False
+        elif data_list == ['']:
+            print(f"No data received: {data_list}")
+            return None
         else:
-            print("Invalid data received")
-            print(data_list)
+            print(f"Invalid data received: {data_list}")
             return None
         
         data = {

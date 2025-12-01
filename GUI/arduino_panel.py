@@ -197,16 +197,53 @@ class ArduinoPanel(Panel):
 
             self.lbl_status.setText("Connected" if self.arduino.is_connected else "Disconnected")
 
-            self.ambtemp_lbl.setText(f"Ambient Temp: {self.arduino.ambtemp}°C")
-            self.rH_lbl.setText(f"Relative Humidity: {self.arduino.rH}%")
-            self.dewpoint_lbl.setText(f"Dew Point: {self.arduino.dewpoint}°C")
+            # DHT
+            if self.arduino.ambtemp is not None:
+                self.ambtemp_lbl.setText(f"Ambient Temp: {self.arduino.ambtemp}°C")
+            else:
+                self.ambtemp_lbl.setText(f"Ambient Temp: {self.arduino.ambtemp}")
+
+            if self.arduino.rH is not None:
+                self.rH_lbl.setText(f"Relative Humidity: {self.arduino.rH}%")
+            else:
+                self.rH_lbl.setText(f"Relative Humidity: {self.arduino.rH}")
+            
+            if self.arduino.rH is not None and self.arduino.ambtemp is not None:
+                self.dewpoint_lbl.setText(f"Dew Point: {self.arduino.dewpoint}°C")
+            else:
+                self.dewpoint_lbl.setText(f"Dew Point: {self.arduino.dewpoint}")
+
             self.dhtstatus_lbl.setText(f"DHT Status: {'OK' if self.arduino.dhtstatus else 'FAULT'}")
+
+            # Digital sensors
             self.door_lbl.setText(f"Door: {'OPEN' if self.arduino.door else 'CLOSED'}")
-            self.leak_lbl.setText(f"Leak: {'LEAKING' if self.arduino.leak else 'NO LEAK'}")
-            self.TC1_lbl.setText(f"TC1 Temp: {self.arduino.TCtemps[0]}°C")
-            self.TC1_fault_lbl.setText(f"TC1 Faults: {', '.join(self.arduino.TCfaults[0]) if self.arduino.TCfaults[0] != 'No Faults' else 'No Faults'}")
-            self.TC2_lbl.setText(f"TC2 Temp: {self.arduino.TCtemps[1]}°C")
-            self.TC2_fault_lbl.setText(f"TC2 Faults: {', '.join(self.arduino.TCfaults[1]) if self.arduino.TCfaults[1] != 'No Faults' else 'No Faults'}") 
+            self.leak_lbl.setText(f"Leak: {'OK' if self.arduino.leak else 'LEAKING'}")
+
+            # Thermocouples
+            if self.arduino.TCtemps[0] is not None:
+                self.TC1_lbl.setText(f"TC1 Temp: {self.arduino.TCtemps[0]}°C")
+            else:
+                self.TC1_lbl.setText(f"TC1 Temp: {self.arduino.TCtemps[0]}")
+
+            if self.arduino.TCfaults[0] == None:
+                self.TC1_fault_lbl.setText(f"TC1 Faults: N/A")
+            else:
+                self.TC1_fault_lbl.setText(f"TC1 Faults: {', '.join(self.arduino.TCfaults[0]) if self.arduino.TCfaults[0] != 'No Faults' else 'No Faults'}")
+            
+            if self.arduino.TCtemps[1] is not None:
+                self.TC2_lbl.setText(f"TC2 Temp: {self.arduino.TCtemps[1]}°C")
+            else:
+                self.TC2_lbl.setText(f"TC2 Temp: {self.arduino.TCtemps[1]}")
+
+            if self.arduino.TCfaults[1] == None:
+                self.TC2_fault_lbl.setText(f"TC2 Faults: N/A") 
+            else:
+                self.TC2_fault_lbl.setText(f"TC2 Faults: {', '.join(self.arduino.TCfaults[1]) if self.arduino.TCfaults[1] != 'No Faults' else 'No Faults'}") 
+
+            if not self.arduino.dhtstatus:
+                print("Restarting DHT")
+                self.arduino.restart_dht()
+                time.sleep(1)
 
             if self.log_status:
                 timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")

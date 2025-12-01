@@ -48,12 +48,18 @@ void setup() {
   Serial.setTimeout(1000);
 }
 
+void clearSerialInputBuffer() {
+  while (Serial.available() > 0) {
+    Serial.read(); // Read and discard the character
+  }
+}
+
 void loop() {
 
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
     input.trim();
-
+    
     if (input == "GetData") {
       int door_state = digitalRead(door_pin); // 1 = closed
       int leak_state = digitalRead(leak_pin); // 1 = leaking
@@ -88,12 +94,19 @@ void loop() {
       Serial.println(",DONE");
     }
 
-    if (input == "RestartDHT") {
+    else if (input == "RestartDHT") {
       dht.begin();
       dht.read();
       Serial.println(dht.isConnected());
     }
 
+    else {
+      clearSerialInputBuffer();
+    }
+
+    
+
   }
       
 }
+

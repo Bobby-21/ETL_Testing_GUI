@@ -142,7 +142,7 @@ class ArduinoPanel(Panel):
         buttons_and_labels.addLayout(button_row)
         buttons_and_labels.addLayout(label_grid)
         self.subgrid.addLayout(buttons_and_labels, 1, 0, 1, 2, alignment=Qt.AlignTop)
-        self.arduino = Sensors("COM6", baudrate=115200, timeout=1.0)
+        self.arduino = Sensors("/dev/arduino", baudrate=115200, timeout=1.0)
         self.sample_time = 2.5
 
     def start_recording(self):

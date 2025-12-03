@@ -1,5 +1,6 @@
 import serial
 import time
+import numpy as np
 
 class Sensors:
     def __init__(self, port, baudrate, timeout):
@@ -89,8 +90,10 @@ class Sensors:
             self.rH = float(data_list[8])
             self.dhtstatus = bool(float(data_list[9]))
             
-
-            self.dewpoint = round(self.ambtemp - (100 - self.rH)/5, 2)
+            b = 17.625
+            c = 243.04
+            gamma = np.log(self.rH/100) + (b*self.ambtemp)/(c + self.ambtemp)
+            self.dewpoint = round((c*gamma)/(b-gamma), 2)
     
             if self.ser and self.ser.is_open:
                 self.is_connected = True

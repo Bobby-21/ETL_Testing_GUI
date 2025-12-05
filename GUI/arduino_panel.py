@@ -73,7 +73,6 @@ class ArduinoPanel(Panel):
 
         self.recorder_stop_evt = None
         self.recording_thread = None
-        self.arduino = None
 
         self.log_status = False
         self.log_timestamp = None

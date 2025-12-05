@@ -8,7 +8,7 @@ from arduino_panel import ArduinoPanel
 #from tamalero_panel import TamaleroPanel
 #from chiller_panel import ChillerPanel
 #from results_panel import ResultsPanel
-#from hv_panel import HVPanel   
+from hv_panel import HVPanel   
 
 
 class MainWindow(QMainWindow):
@@ -22,7 +22,7 @@ class MainWindow(QMainWindow):
         # ----- Build panels -----
         self.ard = ArduinoPanel()
         #self.chill = ChillerPanel()
-        #self.hv = HVPanel()         
+        self.hv = HVPanel()         
         #self.tam = TamaleroPanel()
         #self.term = ResultsPanel()
 
@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         self.left_split = QSplitter(Qt.Vertical)
         self.left_split.addWidget(self.ard)
         #self.left_split.addWidget(self.chill)
-        #self.left_split.addWidget(self.hv)
+        self.left_split.addWidget(self.hv)
         self.left_split.setHandleWidth(6)
         # Equal stretch so they split 1:1:1
         self.left_split.setStretchFactor(0, 1)

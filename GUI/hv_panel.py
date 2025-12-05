@@ -231,7 +231,8 @@ class HVPanel(Panel):
                 self.vmon = self.hv.extract_float_value(self.hv.read_vmon())
                 self.iset = self.hv.extract_float_value(self.hv.read_iset())
                 self.imon = self.hv.extract_float_value(self.hv.read_imon())
-                self.channel = int(self.hv.read_status()['VAL']) & 1
+                self.status = int(self.hv.read_status()['VAL'])
+                self.channel = self.status & 1
 
                 if self.channel:
                     self.lbl_channel.setText("Channel: ON")
@@ -246,6 +247,21 @@ class HVPanel(Panel):
                 self.lbl_set_current.setText(f"ISET: {self.iset} uA")
                 self.lbl_mon_voltage.setText(f"VMON: {self.vmon} V")
                 self.lbl_mon_current.setText(f"IMON: {self.imon} uA")
+                if self.log_status:
+                    timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+                    maindir = Path(__file__).parent.parent
+
+                    resultdir = maindir / "HV Supply Data"
+                    if not os.path.isdir(resultdir):
+                        os.makedirs(resultdir)
+
+                    resultdir.mkdir(exist_ok=True)
+
+                    outfile = resultdir / f"hv_supply_data_{self.log_timestamp}.csv"
+
+                    data = {"Channel": self.channel, "VSET": self.vset, "VMON": self.vmon, "ISET": self.iset, "IMON": self.imon, "Status": self.status}
+                    with open(outfile, 'a') as f:
+                        f.write(f"{timestamp}: {data}\n")
             else:
                 if self.cmd == "vset":
                     try:

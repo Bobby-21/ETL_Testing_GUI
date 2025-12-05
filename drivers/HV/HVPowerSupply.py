@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import os
-from etlup.module.ModuleIV import ModuleIVV0
-from etlup import prod_session
+#from etlup.module.ModuleIV import ModuleIVV0
+#from etlup import prod_session
 
 class HVPowerSupply():
     def __init__(self, port, baud=9600, bd_addr=0, channel=0):
@@ -72,6 +72,10 @@ class HVPowerSupply():
     
     def read_vmon(self):
         response = self.send_command('MON', self.channel, "VMON")
+        return self.parse_response(response)
+        
+    def read_iset(self):
+        response = self.send_command('MON', self.channel, "ISET")
         return self.parse_response(response)
     
     def read_imon(self):

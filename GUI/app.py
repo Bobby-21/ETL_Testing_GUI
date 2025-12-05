@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QHBoxLayout, QSplitter
+    QApplication, QMainWindow, QStyleFactory, QWidget, QHBoxLayout, QSplitter
 )
 from PyQt5.QtCore import Qt, QTimer, QSize
 

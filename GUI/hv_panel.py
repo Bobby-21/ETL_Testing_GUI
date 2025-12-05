@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QGridLayout, QFrame,
-    QPushButton, QLabel, QSizePolicy, QHBoxLayout, QFormLayout, QVBoxLayout
+    QPushButton, QLabel, QSizePolicy, QLineEdit, QHBoxLayout, QFormLayout, QVBoxLayout
 )
 from pathlib import Path
 from PyQt5.QtCore import QSize, Qt
@@ -29,7 +29,7 @@ class HVPanel(Panel):
 
         QLineEdit, QPlainTextEdit {
             color: #ffffff;
-            border: 1px solid #374151;
+            border: 1px solid #ffffff;
             border-radius: 6px;
             padding: 4px 6px;
             selection-background-color: #2563eb;
@@ -96,31 +96,90 @@ class HVPanel(Panel):
         button_row.addWidget(self.btn_connect)
         button_row.addWidget(self.btn_disconnect)
         button_row.addWidget(self.lbl_status, 1, Qt.AlignLeft)
-        button_row.addStretch(2)
+        button_row.addStretch(1)
         button_row.addWidget(self.btn_logging)
         button_row.addWidget(self.lbl_logging, 1, Qt.AlignLeft)
 
         def make_label(text):
             lbl = QLabel(text)
-            lbl.setFont(QFont("Calibri", 15, QFont.Bold))
+            lbl.setFont(QFont("Calibri", 15))
             return lbl
         
+        channel_row = QHBoxLayout()
+        self.lbl_channel = make_label("Channel: ---")
+        channel_row.addWidget(self.lbl_channel)
+
         set_label_row = QHBoxLayout()
-        self.lbl_set_voltage = make_label("Set Voltage (V): --- V")
-        self.lbl_set_current = make_label("Set Current Limit (uA): ---.- uA")
+        self.lbl_set_voltage = make_label("VSET: --- V")
+        self.lbl_set_current = make_label("ISET: ---.- uA")
         set_label_row.addWidget(self.lbl_set_voltage)
         set_label_row.addWidget(self.lbl_set_current)
 
         mon_label_row = QHBoxLayout()
-        self.lbl_mon_voltage = make_label("Mon Voltage (V): --- V")
-        self.lbl_mon_current = make_label("Mon Current (uA): ---.- uA")
+        self.lbl_mon_voltage = make_label("VMON: --- V")
+        self.lbl_mon_current = make_label("IMON: ---.- uA")
         mon_label_row.addWidget(self.lbl_mon_voltage)
         mon_label_row.addWidget(self.lbl_mon_current)
 
+        input_row = QHBoxLayout()
+
+        channel_input_row = QHBoxLayout()
+        voltage_input_row = QHBoxLayout()
+        current_input_row = QHBoxLayout()
+
+        self.btn_channel_on = QPushButton("Channel ON")
+        self.btn_channel_off = QPushButton("Channel OFF")
+        self.btn_channel_on.setObjectName("greenButton")
+        self.btn_channel_off.setObjectName("redButton")
+        self.btn_channel_on.clicked.connect(self.set_channel)
+        self.btn_channel_off.clicked.connect(self.set_channel)
+        channel_input_row.addWidget(self.btn_channel_on)
+        channel_input_row.addWidget(self.btn_channel_off)
+
+        self.lbl_set_voltage_field = make_label("Set Voltage (V): ")
+        self.set_voltage_field = QLineEdit(parent=self)
+        self.set_voltage_field.setFixedSize(60,30)
+        self.btn_vset = QPushButton("Set")
+        self.btn_vset.setObjectName("blueButton")
+        self.btn_vset.clicked.connect(self.set_voltage)
+
+        self.lbl_set_current_field = make_label("Set Current Limit (uA):" )
+        self.set_current_field = QLineEdit(parent=self)
+        self.set_current_field.setFixedSize(60,30)
+        self.btn_iset = QPushButton("Set")
+        self.btn_iset.setObjectName("blueButton")
+        self.btn_iset.clicked.connect(self.set_current)
+
+
+        voltage_input_row.addWidget(self.lbl_set_voltage_field)
+        voltage_input_row.addWidget(self.set_voltage_field)
+        voltage_input_row.addWidget(self.btn_vset)
+        current_input_row.addWidget(self.lbl_set_current_field)
+        current_input_row.addWidget(self.set_current_field)
+        current_input_row.addWidget(self.btn_iset)
+
+        
+        input_row.addLayout(channel_input_row)
+        input_row.addStretch(1)
+        input_row.addLayout(voltage_input_row)
+        input_row.addStretch(1)
+        input_row.addLayout(current_input_row)
+        input_row.addStretch(1)
+
+
         main_layout = QVBoxLayout()
         main_layout.addLayout(button_row)
+        main_layout.addLayout(channel_row)
         main_layout.addLayout(set_label_row)
         main_layout.addLayout(mon_label_row)
+        main_layout.addLayout(input_row)
+
+
+
+        self.subgrid.addLayout(main_layout, 1, 0, 5, 5, Qt.AlignTop)
+        self.sample_time = 0.5
+        self.cmd_waiting = False
+        self.cmd = None
 
 
 
@@ -136,15 +195,103 @@ class HVPanel(Panel):
             self.lbl_status.setText("Connected")
         except serial.SerialException as e:
             print(f"Failed to connect: {e}")
-
-
+        
+        self.hv_stop_evt.clear()
+        self.hv_thread = threading.Thread(target=self.hv_run, daemon=True)
+        self.hv_thread.start()
+        self.btn_disconnect.setEnabled(True)
+        self.btn_connect.setEnabled(False)
+        time.sleep(self.sample_time)
+   
     def stop_hv(self):
         if self.hv_thread == None:
             print("HV thread not running")
             return
         
         self.hv_stop_evt.set()
-        self.hv_thread.join()
-        self.hv_thread = None
-        self.hv.close()
-        self.lbl_status.setText("Disconnected")
+        if self.hv_thread:
+            self.hv_thread.join()
+            self.hv_thread = None
+        if self.hv:
+            self.hv.close()
+            self.lbl_status.setText("Disconnected")
+            self.lbl_set_voltage.setText("VSET: --- V")
+            self.lbl_set_current.setText("ISET: ---.- uA")
+            self.lbl_mon_voltage.setText("VMON: --- V")
+            self.lbl_mon_current.setText("IMON: ---.- uA")
+            self.lbl_channel.setText("Channel: ---")
+            self.btn_disconnect.setEnabled(False)
+            self.btn_connect.setEnabled(True)
+
+
+    def hv_run(self):
+        while not self.hv_stop_evt.is_set():
+            if not self.cmd_waiting:
+                self.vset = self.hv.extract_float_value(self.hv.read_vset())
+                self.vmon = self.hv.extract_float_value(self.hv.read_vmon())
+                self.iset = self.hv.extract_float_value(self.hv.read_iset())
+                self.imon = self.hv.extract_float_value(self.hv.read_imon())
+                self.channel = int(self.hv.read_status()['VAL']) & 1
+
+                if self.channel:
+                    self.lbl_channel.setText("Channel: ON")
+                    self.btn_channel_off.setEnabled(True)
+                    self.btn_channel_on.setEnabled(False)
+                else:
+                    self.lbl_channel.setText("Channel: OFF")
+                    self.btn_channel_off.setEnabled(False)
+                    self.btn_channel_on.setEnabled(True)
+
+                self.lbl_set_voltage.setText(f"VSET: {self.vset} V")
+                self.lbl_set_current.setText(f"ISET: {self.iset} uA")
+                self.lbl_mon_voltage.setText(f"VMON: {self.vmon} V")
+                self.lbl_mon_current.setText(f"IMON: {self.imon} uA")
+            else:
+                if self.cmd == "vset":
+                    try:
+                        value = float(self.set_voltage_field.text())
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        self.set_voltage_field.clear()
+                    self.hv.set_voltage(value)
+                    self.set_voltage_field.clear()
+                
+                elif self.cmd == "iset":
+                    try:
+                        value = float(self.set_current_field.text())
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        self.set_current_field.clear()
+                    self.hv.set_current_limit(value)
+                    self.set_current_field.clear()
+
+                elif self.cmd == "channel":
+                    if self.channel:
+                        self.hv.set_channel_off()
+                    else:
+                        self.hv.set_channel_on()
+                
+                
+                self.cmd_waiting = False
+                self.cmd = None
+            time.sleep(self.sample_time)
+
+    def set_voltage(self):
+        self.cmd_waiting = True
+        self.cmd = "vset"
+
+    def set_current(self):
+        self.cmd_waiting = True
+        self.cmd = "iset"
+    
+    def set_channel(self):
+        self.cmd_waiting = True
+        self.cmd = "channel"
+
+    def toggle_log(self):
+        self.log_status = not self.log_status
+        if self.log_status:
+            self.lbl_logging.setText("Logging")
+            self.log_timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+        else:
+            self.lbl_logging.setText("Not Logging")

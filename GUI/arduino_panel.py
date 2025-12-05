@@ -104,7 +104,7 @@ class ArduinoPanel(Panel):
 
         def make_label(text):
             lbl = QLabel(text)
-            lbl.setFont(QFont("Calibri", 15, QFont.Bold))
+            lbl.setFont(QFont("Calibri", 15))
             return lbl
 
         self.ambtemp_lbl = make_label("Ambient Temp: --.-°C")

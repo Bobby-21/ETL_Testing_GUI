@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QStyleFactory, QWidget, QHBoxLayout, QSplitter
 )
 from PyQt5.QtCore import Qt, QTimer, QSize
+from PyQt5.QtGui import QIcon
 
 from arduino_panel import ArduinoPanel
 #from tamalero_panel import TamaleroPanel
@@ -71,6 +72,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon("./cat.jpg"))
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())

@@ -242,3 +242,11 @@ class ChillerPanel(Panel):
                 self.input_set_temp.clear()
 
             time.sleep(self.sample_time)
+            
+    def toggle_log(self):
+        self.log_status = not self.log_status
+        if self.log_status:
+            self.lbl_logging.setText("Logging")
+            self.log_timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+        else:
+            self.lbl_logging.setText("Not Logging")

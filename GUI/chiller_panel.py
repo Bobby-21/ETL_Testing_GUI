@@ -157,7 +157,7 @@ class ChillerPanel(Panel):
         self.chiller_stop_evt = threading.Event()
         try:
             # TODO: Add more channels
-            self.chiller = JULABO("/dev/chiller", baud=4800)
+            self.chiller = JULABO("COM9", baud=4800)
             self.lbl_status.setText("Connected")
         except serial.SerialException as e:
             print(f"Failed to connect: {e}")
@@ -170,7 +170,7 @@ class ChillerPanel(Panel):
         time.sleep(self.sample_time)
     
     def stop_chiller(self):
-        if self.hv_thread == None:
+        if self.chiller_thread == None:
             print("Chiller thread not running")
             return
         
@@ -207,7 +207,7 @@ class ChillerPanel(Panel):
                     self.set_temp = self.chiller.get_work_temperature()
                     self.lbl_curr_temp.setText(f"Current Temp: {self.curr_temp:.2f} °C")
                     self.lbl_set_temp.setText(f"Set Temp: {self.set_temp:.2f} °C")
-                    self.power = self.chiller.get_power()
+                    self.power = self.chiller.get_power().strip()
                     if self.power == '1':
                         self.lbl_power.setText("Power: ON")
                         self.btn_power_on.setEnabled(False)
@@ -229,10 +229,10 @@ class ChillerPanel(Panel):
 
                         outfile = resultdir / f"chiller_data_{self.log_timestamp}.csv"
 
-                        data = {"Power": self.power, "Set Temp (°C)": self.set_temp, "Curr Temp (°C)": self.curr_temp}
+                        data = {"Power": self.power.strip(), "Set Temp (°C)": self.set_temp, "Curr Temp (°C)": self.curr_temp}
                         with open(outfile, 'a') as f:
                             f.write(f"{timestamp}: {data}\n")
-                            
+
                 except Exception as e:
                     print(f"Error reading chiller data: {e}")
             else:

@@ -4,12 +4,17 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QTimer, QSize
 from PyQt5.QtGui import QIcon
+from pathlib import Path
 
 from arduino_panel import ArduinoPanel
 #from tamalero_panel import TamaleroPanel
 from chiller_panel import ChillerPanel
 #from results_panel import ResultsPanel
-from hv_panel import HVPanel   
+from hv_panel import HVPanel
+
+MAIN_DIR = Path(__file__).parent.parent
+gui_dir = MAIN_DIR / "GUI"
+sys.path.append(str(gui_dir))
 
 
 class MainWindow(QMainWindow):
@@ -19,6 +24,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("ETL Testing GUI")
         self.setFixedSize(QSize(1500, 1000))
         self.setStyleSheet("background-color: #3b3b3b;")
+        self.setWindowIcon(QIcon(str(gui_dir / "icon.png")))
 
         # ----- Build panels -----
         self.ard = ArduinoPanel()
@@ -72,6 +78,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(str(gui_dir / "icon.png")))
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())

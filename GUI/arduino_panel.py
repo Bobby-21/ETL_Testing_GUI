@@ -248,7 +248,7 @@ class ArduinoPanel(Panel):
                 timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
                 maindir = Path(__file__).parent.parent
 
-                resultdir = maindir / "Sensor Data"
+                resultdir = maindir / "Environmental Data" / "Arduino Data"
                 if not os.path.isdir(resultdir):
                     os.makedirs(resultdir)
 

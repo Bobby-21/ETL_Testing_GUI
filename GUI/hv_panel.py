@@ -24,7 +24,7 @@ class HVPanel(Panel):
 
         self.setObjectName("HVPanel")
         self.setStyleSheet("""
-        #arduinoPanel, #HVPanel QWidget { color: #ffffff; }
+        #HVPanel QWidget { color: #ffffff; }
         QLabel { color: #ffffff; }
 
         QLineEdit, QPlainTextEdit {
@@ -251,7 +251,7 @@ class HVPanel(Panel):
                     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
                     maindir = Path(__file__).parent.parent
 
-                    resultdir = maindir / "HV Supply Data"
+                    resultdir = maindir / "Environmental Data" / "HV Supply Data"
                     if not os.path.isdir(resultdir):
                         os.makedirs(resultdir)
 

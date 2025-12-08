@@ -1,50 +1,38 @@
-# GUI/chiller_panel.py
-import sys, os, platform, glob
-from pathlib import Path
-
+import sys
 from PyQt5.QtWidgets import (
-    QHBoxLayout, QFormLayout, QPushButton, QLabel,
-    QComboBox, QTextEdit, QDoubleSpinBox
+    QApplication, QMainWindow, QWidget, QGridLayout, QFrame,
+    QPushButton, QLabel, QSizePolicy, QLineEdit, QHBoxLayout, QFormLayout, QVBoxLayout
 )
-from PyQt5.QtCore import Qt, pyqtSlot, QTimer
+from pathlib import Path
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
-
 from panel import Panel
-import qt_ansi
+import threading
+import serial
+import time
+import os
 
-# repo root / src on path
 MAIN_DIR = Path(__file__).parent.parent
-src_dir = MAIN_DIR / "src"
-if str(src_dir) not in sys.path:
-    sys.path.append(str(src_dir))
+chill_dir = MAIN_DIR / "drivers" / "Julabo"
+sys.path.append(str(chill_dir))
 
-# new client API (process-managed)
-from src.devices.chiller.client import ChillerClient
-
+from julabolib import JULABO
 
 class ChillerPanel(Panel):
-    """
-    Chiller control panel using a separate worker process
-    (src/devices/chiller/worker.py → delegates to julabo.py).
-    """
-
     def __init__(self, title="Chiller"):
         super().__init__(title)
-
-        # ---------- styles ----------
-        self.setObjectName("chillerPanel")
+        self.setObjectName("ChillerPanel")
         self.setStyleSheet("""
-        #chillerPanel, #chillerPanel QWidget { color: #ffffff; }
+        #HVPanel QWidget { color: #ffffff; }
         QLabel { color: #ffffff; }
 
-        QComboBox, QTextEdit {
+        QLineEdit, QPlainTextEdit {
             color: #ffffff;
-            border: 1px solid #374151;
+            border: 1px solid #ffffff;
             border-radius: 6px;
             padding: 4px 6px;
             selection-background-color: #2563eb;
             selection-color: #ffffff;
-            background-color: transparent;
         }
 
         QPushButton {
@@ -57,332 +45,200 @@ class ChillerPanel(Panel):
         QPushButton:disabled { color: #9aa5b1; }
 
         QPushButton#greenButton {
-            background-color: #22c55e;
+            background-color: #16a34a;
             color: #ffffff;
         }
-        QPushButton#greenButton:hover { background-color: #16a34a; }
+        QPushButton#greenButton:hover { background-color: #22c55e; }
         QPushButton#greenButton:pressed { background-color: #15803d; }
+        QPushButton#greenButton:disabled { background-color: #14532d; color: #9aa5b1;}
 
-        QPushButton#blueButton { 
-            background-color: #2563eb; 
-            color: #ffffff;
-        }
-        QPushButton#blueButton:hover  { background-color: #1d4ed8; }
-        QPushButton#blueButton:pressed{ background-color: #1e40af; }
 
         QPushButton#redButton {
-            background-color: #ef4444;
+            background-color: #e53935;
             color: #ffffff;
         }
-        QPushButton#redButton:hover  { background-color: #dc2626; }
-        QPushButton#redButton:pressed{ background-color: #b91c1c; }
+        QPushButton#redButton:hover { background-color: #ef5350; }
+        QPushButton#redButton:pressed { background-color: #c62828; }
+        QPushButton#redButton:disabled { background-color: #7f1d1d; color: #9aa5b1;}
+                           
+        QPushButton#blueButton {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+        QPushButton#blueButton:hover { background-color: #339cff; }
+        QPushButton#blueButton:pressed { background-color: #0056b3; }
         """)
 
-        # ---------- spacer ----------
-        top_pad = max(24, self.fontMetrics().height() + 8)
-        self.subgrid.setRowMinimumHeight(0, top_pad)
-        row0 = 1
+        self.chiller_stop_evt = None
+        self.chiller_thread = None
+        self.log_status = False
+        self.log_timestamp = None
 
-        # ---------- form: device + connect ----------
-        form = QFormLayout()
-
-        dev_row = QHBoxLayout()
-        self.dev_combo = QComboBox()
-        self.btn_refresh = QPushButton("Refresh")
-        self.btn_refresh.clicked.connect(self._refresh_ports)
-        dev_row.addWidget(self.dev_combo, 1)
-        dev_row.addWidget(self.btn_refresh)
-        form.addRow("Device:", dev_row)
-
-        connect_row = QHBoxLayout()
         self.btn_connect = QPushButton("Connect")
         self.btn_connect.setObjectName("greenButton")
-        self.lbl_status = QLabel("Disconnected")
-        connect_row.addWidget(self.btn_connect)
-        connect_row.addWidget(self.lbl_status, 1, Qt.AlignLeft)
-
-        # ---------- temperature controls ----------
-        temp_row = QHBoxLayout()
-        self.temp_spin = QDoubleSpinBox()
-        self.temp_spin.setDecimals(2)
-        self.temp_spin.setSingleStep(0.10)
-        self.temp_spin.setRange(-20.0, 120.0)
-        self.temp_spin.setValue(25.00)
-        self.temp_spin.setSuffix(" °C")
-
-        self.btn_set = QPushButton("Set Temp")
-        self.btn_set.setEnabled(False)
-
-        self.btn_run = QPushButton("Run")
-        self.btn_run.setObjectName("blueButton")
-        self.btn_run.setEnabled(False)
-        self._powered = False
-
-        temp_row.addWidget(QLabel("Setpoint:"))
-        temp_row.addWidget(self.temp_spin)
-        temp_row.addWidget(self.btn_set)
-        temp_row.addWidget(self.btn_run)
-
-        # ---------- info ----------
-        info_row = QHBoxLayout()
-        self.lbl_current_temp = QLabel("Current Temp: -- °C")
-        self.lbl_current_temp.setFont(QFont("Arial", 16, QFont.Bold))
-        self.lbl_status_onoff = QLabel("Status: --")
-        self.lbl_status_onoff.setFont(QFont("Arial", 16, QFont.Bold))
-        info_row.addWidget(self.lbl_current_temp)
-        info_row.addWidget(self.lbl_status_onoff)
-
-        # ---------- log ----------
-        self.log = QTextEdit()
-        qt_ansi.configure_textedit(self.log, wrap=True)
-        self._ansi_sink = qt_ansi.AnsiLogSink(self.log, cr_mode="newline")
-
-        # ---------- layout ----------
-        self.subgrid.addLayout(form,        row0 + 0, 0)
-        self.subgrid.addLayout(connect_row, row0 + 1, 0)
-        self.subgrid.addLayout(temp_row,    row0 + 2, 0)
-        self.subgrid.addLayout(info_row,    row0 + 3, 0)
-        self.subgrid.addWidget(self.log,    row0 + 4, 0)
-        self.subgrid.setRowStretch(row0 + 4, 1)
-
-        # ---------- client (process owner) ----------
-        self.client = ChillerClient(self)
-        self.client.log.connect(self._ansi_sink.feed)
-        self.client.error.connect(self._on_error)
-        self.client.warn.connect(lambda w: self._append_log(f"[Chiller] WARN: {w}"))
-        self.client.connected.connect(self._on_connected)
-        self.client.disconnected.connect(self._on_disconnected)
-        self.client.temp.connect(self._on_temp)
-        self.client.status.connect(self._on_status)
-        self.client.ack.connect(self._on_ack)
-
-        # ---------- signals ----------
-        self.btn_connect.clicked.connect(self._on_connect_clicked)
-        self.btn_set.clicked.connect(self._on_set_clicked)
-        self.btn_run.clicked.connect(self._on_run_clicked)
-
-        # ---------- state ----------
-        self._connected = False
-        self._refresh_ports()
-
-    # ===================== ports =====================
-
-    def _refresh_ports(self):
-        """Populate the device combo with available serial/USB devices (Linux/macOS)."""
-        prev = self.dev_combo.currentData()
-        entries, seen = [], set()
-
-        try:
-            from serial.tools import list_ports
-            for p in list_ports.comports():
-                dev = p.device
-                if sys.platform == "darwin" and dev.startswith("/dev/tty."):
-                    continue
-                label = dev
-                extra = " — ".join(
-                    s for s in [p.manufacturer or "", p.product or p.description or ""]
-                    if s
-                )
-                if extra:
-                    label += f" — {extra}"
-                if p.vid is not None and p.pid is not None:
-                    label += f" (VID:PID={p.vid:04x}:{p.pid:04x})"
-                if dev not in seen:
-                    entries.append((dev, label)); seen.add(dev)
-        except Exception:
-            patterns = (
-                ["/dev/cu.usbserial*", "/dev/cu.usbmodem*"] if sys.platform == "darwin"
-                else ["/dev/serial/by-id/*", "/dev/ttyUSB*", "/dev/ttyACM*"]
-            )
-            for pat in patterns:
-                for path in sorted(glob.glob(pat)):
-                    if "/dev/serial/by-id/" in path:
-                        dev = os.path.realpath(path)
-                        label = f"{os.path.basename(path)} \u2192 {dev}"
-                    else:
-                        dev = path
-                        if sys.platform == "darwin" and dev.startswith("/dev/tty."):
-                            continue
-                        label = dev
-                    if dev not in seen:
-                        entries.append((dev, label)); seen.add(dev)
-
-        if not entries:
-            entries = [("", "(no serial devices found)")]
-
-        def sort_key(item):
-            dev = item[0]; score = 0
-            if "usbserial" in dev: score = -3
-            elif "usbmodem" in dev: score = -2
-            elif "ttyACM" in dev: score = -1
-            return (score, dev)
-        entries.sort(key=sort_key)
-
-        self.dev_combo.blockSignals(True)
-        self.dev_combo.clear()
-        for dev, label in entries:
-            self.dev_combo.addItem(label, userData=dev)
-
-        idx = -1
-        if prev:
-            for i in range(self.dev_combo.count()):
-                if self.dev_combo.itemData(i) == prev:
-                    idx = i; break
-        if idx < 0:
-            for i in range(self.dev_combo.count()):
-                if self.dev_combo.itemData(i):
-                    idx = i; break
-            if idx < 0: idx = 0
-        self.dev_combo.setCurrentIndex(idx)
-        self.dev_combo.blockSignals(False)
-
-    # ===================== connect / disconnect =====================
-
-    @pyqtSlot()
-    def _on_connect_clicked(self):
-        if self._connected or self.client.isRunning():
-            # act as "Disconnect"
-            self._append_log("[Chiller] Disconnecting…")
-            self.btn_connect.setEnabled(False)
-            self.client.stop()
-            return
-
-        dev = self.dev_combo.currentData()
-        if not dev:
-            self._append_log("[Chiller] Please select a valid serial device.")
-            return
-
-        self._append_log(f"[Chiller] Launching worker for {dev}")
-        self.btn_connect.setEnabled(False)
-        self.btn_set.setEnabled(False)
-        self.btn_run.setEnabled(False)
-        # sample_time can be a control (for now hardcode 1.0s like before)
-        self.client.start(device=dev, sample_time=1.0)
-
-    # ===================== event handlers from client =====================
-
-    def _on_connected(self, dev: str):
-        self._append_log(f"[Chiller] Connected to {dev}")
-        self._set_connected_ui(True)
-        self.lbl_status_onoff.setText("Status: --")
-        # ask worker for an initial status snapshot
-        self.client.request_status()
-
-    def _on_disconnected(self):
-        self._append_log("[Chiller] Disconnected.")
-        self._set_connected_ui(False)
-
-    def _on_error(self, msg: str):
-        self._append_log(f"\x1b[31m[Chiller] ERROR: {msg}\x1b[0m")
-        # ensure UI resets
-        self._set_connected_ui(False)
-
-    def _on_temp(self, value: float):
-        try:
-            self.lbl_current_temp.setText(f"Current Temp: {float(value):.2f} °C")
-        except Exception:
-            pass
-
-    def _on_status(self, msg: dict):
-        sp  = msg.get("setpoint")
-        pv  = msg.get("temperature")
-        pwr = msg.get("power")
-
-        if sp is not None:
-            try: self.temp_spin.setValue(float(sp))
-            except Exception: pass
-
-        if pv is not None:
-            try: self.lbl_current_temp.setText(f"Current Temp: {float(pv):.2f} °C")
-            except Exception: pass
-
-        if pwr is not None:
-            on = self._to_bool(pwr)
-            self._update_power_ui(on)
-            self.lbl_status_onoff.setText("Status: ON" if on else "Status: OFF")
-
-        if self._connected:
-            self.btn_run.setEnabled(True)
-
-    def _on_ack(self, msg: dict):
-        if msg.get("cmd") == "power":
-            on = self._to_bool(msg.get("on"))
-            self._update_power_ui(on)
-            self.lbl_status_onoff.setText("Status: ON" if on else "Status: OFF")
-            if self._connected:
-                self.btn_run.setEnabled(True)
-        self._append_log(f"[Chiller] ACK: {msg}")
-
-    # ===================== send commands (via client) =====================
-
-    @pyqtSlot()
-    def _on_set_clicked(self):
-        if not self._connected:
-            self._append_log("[Chiller] Not connected.")
-            return
-        sp = float(self.temp_spin.value())
-        self.client.set_temp(sp)
-        self._append_log(f"[Chiller] Setpoint request: {sp:.2f} °C")
-
-    @pyqtSlot()
-    def _on_run_clicked(self):
-        """Toggle power: ON → OFF, OFF → ON."""
-        if not self._connected:
-            self._append_log("[Chiller] Not connected.")
-            return
-
-        # Disable until we get ack/status back to prevent double clicks
-        self.btn_run.setEnabled(False)
-
-        if self._powered:
-            self.client.power(False)
-            self._append_log("[Chiller] Power OFF requested.")
-        else:
-            self.client.power(True)
-            self._append_log("[Chiller] Power ON requested.")
-
-        # Optional: ask for a fresh status snapshot
-        self.client.request_status()
-
-    # ===================== helpers =====================
-
-    def _append_log(self, s: str):
-        self._ansi_sink.feed(s.rstrip("\n") + "\n")
-
-    def _set_connected_ui(self, ok: bool):
-        self._connected = ok
-        self.lbl_status.setText("Connected" if ok else "Disconnected")
-        self.btn_connect.setText("Disconnect" if ok else "Connect")
+        self.btn_connect.clicked.connect(self.start_chiller)
         self.btn_connect.setEnabled(True)
-        self.btn_set.setEnabled(ok)
-        self.btn_run.setEnabled(ok)
-        if not ok:
-            self._update_power_ui(False)
 
-    def _apply_button_style(self, btn: QPushButton, object_name: str):
-        btn.setObjectName(object_name)
-        btn.style().unpolish(btn)
-        btn.style().polish(btn)
-        btn.update()
+        self.btn_disconnect = QPushButton("Disconnect")
+        self.btn_disconnect.setObjectName("redButton")
+        self.btn_disconnect.clicked.connect(self.stop_chiller)
+        self.btn_disconnect.setEnabled(False)
 
-    def _to_bool(self, v):
-        if isinstance(v, bool):
-            return v
-        if isinstance(v, (int, float)):
-            return v != 0
-        if isinstance(v, str):
-            s = v.strip().lower()
-            if s in ("on", "true", "1", "yes", "y", "enabled"):
-                return True
-            if s in ("off", "false", "0", "no", "n", "disabled"):
-                return False
-        return False
+        self.lbl_status = QLabel("Disconnected")
 
-    def _update_power_ui(self, on: bool):
-        self._powered = bool(on)
-        if self._powered:
-            self.btn_run.setText("Power Off")
-            self._apply_button_style(self.btn_run, "redButton")
-        else:
-            self.btn_run.setText("Run")
-            self._apply_button_style(self.btn_run, "blueButton")
+        self.btn_logging = QPushButton("Toggle Logging")
+        self.btn_logging.setObjectName("blueButton")
+        self.btn_logging.clicked.connect(self.toggle_log)
+        self.lbl_logging = QLabel("Not Logging")
+
+        button_row = QHBoxLayout()
+        button_row.addWidget(self.btn_connect)
+        button_row.addWidget(self.btn_disconnect)
+        button_row.addWidget(self.lbl_status, 1, Qt.AlignLeft)
+        button_row.addStretch(1)
+        button_row.addWidget(self.btn_logging)
+        button_row.addWidget(self.lbl_logging, 1, Qt.AlignLeft)
+
+        def make_label(text):
+            lbl = QLabel(text)
+            lbl.setFont(QFont("Calibri", 15))
+            return lbl
+        
+        label_row = QHBoxLayout()
+
+        self.lbl_power = make_label("Power: ---")
+        self.lbl_set_temp = make_label("Set Temp: --- °C")
+        self.lbl_curr_temp = make_label("Current Temp: --- °C")
+
+        label_row.addWidget(self.lbl_power)
+        label_row.addWidget(self.lbl_set_temp)
+        label_row.addWidget(self.lbl_curr_temp)
+
+        input_row = QHBoxLayout()
+
+        self.lbl_power_toggle = make_label("Power: ")
+        self.btn_power_on = QPushButton("ON")
+        self.btn_power_on.setObjectName("greenButton")
+        self.btn_power_on.clicked.connect(self.power_on)
+        self.btn_power_off = QPushButton("OFF")
+        self.btn_power_off.setObjectName("redButton")
+        self.btn_power_off.clicked.connect(self.power_off)
+        self.btn_power_on.setEnabled(False)
+        self.btn_power_off.setEnabled(False)
+        self.lbl_set_temp_input = make_label("Set Temp (°C): ")
+        self.input_set_temp = QLineEdit()
+        self.input_set_temp.setFixedSize(60, 30)
+        self.btn_set_temp = QPushButton("Set")
+        self.btn_set_temp.setObjectName("blueButton")
+        self.btn_set_temp.clicked.connect(self.set_temperature)
+        input_row.addWidget(self.lbl_power_toggle)
+        input_row.addWidget(self.btn_power_on)
+        input_row.addWidget(self.btn_power_off)
+        input_row.addWidget(self.lbl_set_temp_input)
+        input_row.addWidget(self.input_set_temp)
+        input_row.addWidget(self.btn_set_temp)
+        input_row.addStretch(1)
+
+        layout = QVBoxLayout()
+        layout.addLayout(button_row)
+        layout.addLayout(label_row)
+        layout.addLayout(input_row)
+        layout.addStretch(1)
+
+        self.subgrid.addLayout(layout, 1, 0, 5, 3)
+        self.sample_time = 1.0
+        self.cmd_waiting = False
+
+    def start_chiller(self):
+        if self.chiller_thread != None:
+            print("Chiller thread already running")
+            return
+        
+        self.chiller_stop_evt = threading.Event()
+        try:
+            # TODO: Add more channels
+            self.chiller = JULABO("/dev/chiller", baud=4800)
+            self.lbl_status.setText("Connected")
+        except serial.SerialException as e:
+            print(f"Failed to connect: {e}")
+        
+        self.chiller_stop_evt.clear()
+        self.chiller_thread = threading.Thread(target=self.chiller_run, daemon=True)
+        self.chiller_thread.start()
+        self.btn_disconnect.setEnabled(True)
+        self.btn_connect.setEnabled(False)
+        time.sleep(self.sample_time)
+    
+    def stop_chiller(self):
+        if self.hv_thread == None:
+            print("Chiller thread not running")
+            return
+        
+        self.chiller_stop_evt.set()
+        if self.chiller_thread:
+            self.chiller_thread.join()
+            self.chiller_thread = None
+        if self.chiller:
+            self.chiller.close()
+            self.lbl_status.setText("Disconnected")
+            self.lbl_power.setText("Power: ---")
+            self.lbl_set_temp.setText("Set Temp: --- °C")
+            self.lbl_curr_temp.setText("Current Temp: --- °C")
+            self.btn_disconnect.setEnabled(False)
+            self.btn_connect.setEnabled(True)
+
+    def power_on(self):
+        if self.chiller:
+            self.chiller.set_power_on()
+    
+    def power_off(self):
+        if self.chiller:
+            self.chiller.set_power_off()
+        
+    def set_temperature(self):
+        if self.chiller:
+            self.cmd_waiting = True
+
+    def chiller_run(self):
+        while not self.chiller_stop_evt.is_set():
+            if not self.cmd_waiting:
+                try:
+                    self.curr_temp = self.chiller.get_temperature()
+                    self.set_temp = self.chiller.get_work_temperature()
+                    self.lbl_curr_temp.setText(f"Current Temp: {self.curr_temp:.2f} °C")
+                    self.lbl_set_temp.setText(f"Set Temp: {self.set_temp:.2f} °C")
+                    self.power = self.chiller.get_power()
+                    if self.power == '1':
+                        self.lbl_power.setText("Power: ON")
+                        self.btn_power_on.setEnabled(False)
+                        self.btn_power_off.setEnabled(True)
+                    else:
+                        self.lbl_power.setText("Power: OFF")
+                        self.btn_power_on.setEnabled(True)
+                        self.btn_power_off.setEnabled(False)
+                    
+                    if self.log_status:
+                        timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+                        maindir = Path(__file__).parent.parent
+
+                        resultdir = maindir / "Environmental Data" / "Chiller Data"
+                        if not os.path.isdir(resultdir):
+                            os.makedirs(resultdir)
+
+                        resultdir.mkdir(exist_ok=True)
+
+                        outfile = resultdir / f"chiller_data_{self.log_timestamp}.csv"
+
+                        data = {"Power": self.power, "Set Temp (°C)": self.set_temp, "Curr Temp (°C)": self.curr_temp}
+                        with open(outfile, 'a') as f:
+                            f.write(f"{timestamp}: {data}\n")
+                            
+                except Exception as e:
+                    print(f"Error reading chiller data: {e}")
+            else:
+                self.cmd_waiting = False
+                temp = float(self.input_set_temp.text())
+                self.chiller.set_work_temperature(temp)
+                self.input_set_temp.clear()
+
+            time.sleep(self.sample_time)

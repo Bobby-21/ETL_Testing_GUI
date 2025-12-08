@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QTimer, QSize
 
 from arduino_panel import ArduinoPanel
 #from tamalero_panel import TamaleroPanel
-#from chiller_panel import ChillerPanel
+from chiller_panel import ChillerPanel
 #from results_panel import ResultsPanel
 from hv_panel import HVPanel   
 
@@ -21,7 +21,7 @@ class MainWindow(QMainWindow):
 
         # ----- Build panels -----
         self.ard = ArduinoPanel()
-        #self.chill = ChillerPanel()
+        self.chill = ChillerPanel()
         self.hv = HVPanel()         
         #self.tam = TamaleroPanel()
         #self.term = ResultsPanel()
@@ -29,12 +29,9 @@ class MainWindow(QMainWindow):
         # ----- Left column: vertical splitter (Arduino / Chiller / HV) -----
         self.left_split = QSplitter(Qt.Vertical)
         self.left_split.addWidget(self.ard)
-        #self.left_split.addWidget(self.chill)
+        self.left_split.addWidget(self.chill)
         self.left_split.addWidget(self.hv)
-        self.left_split.setHandleWidth(6)
-        # Equal stretch so they split 1:1:1
-        self.left_split.setStretchFactor(0, 1)
-        self.left_split.setStretchFactor(1, 1)      
+        self.left_split.setHandleWidth(6)    
 
         # ----- Right column: vertical splitter (Tamalero / Terminal) -----
         self.right_split = QSplitter(Qt.Vertical)
@@ -47,9 +44,7 @@ class MainWindow(QMainWindow):
         self.main_split = QSplitter(Qt.Horizontal)
         self.main_split.addWidget(self.left_split)
         #self.main_split.addWidget(self.tam)
-        self.main_split.setHandleWidth(8)
-        self.main_split.setStretchFactor(0, 1)
-        self.main_split.setStretchFactor(1, 1)      
+        self.main_split.setHandleWidth(6)
 
         # ----- Central widget & margins -----
         container = QWidget()
@@ -68,11 +63,10 @@ class MainWindow(QMainWindow):
         right_w = total_w - left_w
         self.main_split.setSizes([left_w, right_w])
 
-        # Left split: Arduino/HV equal heights 1:1
+        # Left split: Arduino/Chiller/HV equal heights 1:1:1
         total_h_left = self.left_split.height() or (self.height() - 32)
-        lefth1 = total_h_left // 2
-        lefth2 = total_h_left - lefth1
-        self.left_split.setSizes([lefth1, lefth2])
+        lefth = total_h_left // 3
+        self.left_split.setSizes([lefth, lefth, lefth])
 
 
 if __name__ == "__main__":

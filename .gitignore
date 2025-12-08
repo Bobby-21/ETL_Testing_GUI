@@ -27,5 +27,4 @@ get_platformio.py
 
 IV_Curves/*
 
-Sensor Data/*
-HV Supply Data/*
+Environmental Data/*

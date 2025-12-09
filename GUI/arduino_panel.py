@@ -13,8 +13,8 @@ import time
 import os
 
 MAIN_DIR = Path(__file__).parent.parent
-src_dir = MAIN_DIR / "src"
-sys.path.append(str(src_dir))
+ard_dir = MAIN_DIR / "drivers" / "Arduino"
+sys.path.append(str(ard_dir))
 
 from sensors import Sensors
 

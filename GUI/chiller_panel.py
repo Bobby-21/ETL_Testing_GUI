@@ -13,10 +13,10 @@ import time
 import os
 
 MAIN_DIR = Path(__file__).parent.parent
-chill_dir = MAIN_DIR / "drivers" / "Julabo"
+chill_dir = MAIN_DIR / "drivers" / "Chiller"
 sys.path.append(str(chill_dir))
 
-from julabolib import JULABO
+from chiller import JULABO
 
 class ChillerPanel(Panel):
     def __init__(self, title="Chiller"):

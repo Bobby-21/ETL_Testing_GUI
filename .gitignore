@@ -25,6 +25,5 @@ get_platformio.py
 
 # Add results/output directories when location they are generated is finalized
 
-IV_Curves/*
-
 Environmental Data/*
+Test Results/*

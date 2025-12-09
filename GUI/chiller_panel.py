@@ -156,8 +156,7 @@ class ChillerPanel(Panel):
         
         self.chiller_stop_evt = threading.Event()
         try:
-            # TODO: Add more channels
-            self.chiller = JULABO("COM9", baud=4800)
+            self.chiller = JULABO("/dev/chiller", baud=4800)
             self.lbl_status.setText("Connected")
         except serial.SerialException as e:
             print(f"Failed to connect: {e}")
@@ -242,7 +241,7 @@ class ChillerPanel(Panel):
                 self.input_set_temp.clear()
 
             time.sleep(self.sample_time)
-            
+
     def toggle_log(self):
         self.log_status = not self.log_status
         if self.log_status:

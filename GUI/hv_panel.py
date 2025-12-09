@@ -266,19 +266,19 @@ class HVPanel(Panel):
                 if self.cmd == "vset":
                     try:
                         value = float(self.set_voltage_field.text())
+                        self.hv.set_voltage(value)
                     except Exception as e:
                         print(f"Error: {e}")
                         self.set_voltage_field.clear()
-                    self.hv.set_voltage(value)
                     self.set_voltage_field.clear()
                 
                 elif self.cmd == "iset":
                     try:
                         value = float(self.set_current_field.text())
+                        self.hv.set_current_limit(value)
                     except Exception as e:
                         print(f"Error: {e}")
                         self.set_current_field.clear()
-                    self.hv.set_current_limit(value)
                     self.set_current_field.clear()
 
                 elif self.cmd == "channel":

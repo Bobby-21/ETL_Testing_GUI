@@ -15,6 +15,8 @@ wheels/
 # KCU firmware
 drivers/KCU/*
 
+.DS_Store
+
 # PlatformIO
 get_platformio.py
 

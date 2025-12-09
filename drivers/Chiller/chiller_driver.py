@@ -12,14 +12,13 @@ __copyright__ = "2018 Joonas Konki"
 import logging
 import serial
 import time
-import re
 
 # Set the minimum safe time interval between sent commands that is required according to the user manual
 SAFE_TIME_INTERVAL = 0.25
 
 END_CHAR = '\x0D'
 
-class JULABO():
+class Chiller():
 	def __init__(self,port,baud):
 		self.port = port
 		self.ser = serial.Serial( port=self.port,

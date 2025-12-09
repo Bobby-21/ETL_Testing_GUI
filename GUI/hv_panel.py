@@ -1,27 +1,25 @@
 import sys
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QGridLayout, QFrame,
-    QPushButton, QLabel, QSizePolicy, QLineEdit, QHBoxLayout, QFormLayout, QVBoxLayout
-)
-from pathlib import Path
-from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QFont
-from panel import Panel
 import threading
 import serial
 import time
 import os
 
+from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit, QHBoxLayout, QVBoxLayout
+from pathlib import Path
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
+from panel import Panel
+
 MAIN_DIR = Path(__file__).parent.parent
 hv_dir = MAIN_DIR / "drivers" / "HV"
 sys.path.append(str(hv_dir))
 
-from HVPowerSupply import HVPowerSupply
+from hv_driver import HVPowerSupply
 
 class HVPanel(Panel):
     def __init__(self, title="HV Supply"):
         super().__init__(title)
-
+        
         self.setObjectName("HVPanel")
         self.setStyleSheet("""
         #HVPanel QWidget { color: #ffffff; }

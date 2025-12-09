@@ -1,5 +1,3 @@
-# Write python serial file to talk to CAEN NDT 1470 HV power supply
-
 import serial
 import time
 import matplotlib.pyplot as plt
@@ -33,7 +31,9 @@ class HVPowerSupply():
         if value is not None:
             cmd += f",VAL:{value}"
         cmd += "\r\n"
+        self.ser.reset_input_buffer()
         self.ser.write(bytes(cmd, 'ascii'))
+        self.ser.flush()
         response = self.ser.readline()
 
         return response.decode('ascii')

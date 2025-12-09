@@ -19,10 +19,10 @@ from chiller_driver import Chiller
 class ChillerPanel(Panel):
     def __init__(self, title="Chiller"):
         super().__init__(title)
-        
+
         self.setObjectName("ChillerPanel")
         self.setStyleSheet("""
-        #HVPanel QWidget { color: #ffffff; }
+        #ChillerPanel QWidget { color: #ffffff; }
         QLabel { color: #ffffff; }
 
         QLineEdit, QPlainTextEdit {

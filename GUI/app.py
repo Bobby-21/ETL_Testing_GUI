@@ -8,6 +8,7 @@ from pathlib import Path
 from arduino_panel import ArduinoPanel
 from chiller_panel import ChillerPanel
 from hv_panel import HVPanel
+from lv_panel import LVPanel
 
 MAIN_DIR = Path(__file__).parent.parent
 gui_dir = MAIN_DIR / "GUI"
@@ -25,13 +26,16 @@ class MainWindow(QMainWindow):
         # ----- Build panels -----
         self.ard = ArduinoPanel()
         self.chill = ChillerPanel()
-        self.hv = HVPanel()         
+        self.hv = HVPanel()
+        self.lv = LVPanel()    
 
         # ----- Left column: vertical splitter (Arduino / Chiller / HV / LV) -----
         self.left_split = QSplitter(Qt.Vertical)
         self.left_split.addWidget(self.ard)
         self.left_split.addWidget(self.chill)
         self.left_split.addWidget(self.hv)
+        self.left_split.addWidget(self.lv)
+
         self.left_split.setHandleWidth(6)    
 
         # ----- Right column: vertical splitter (Module Testing) -----

@@ -1,23 +1,20 @@
 import sys
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QGridLayout, QFrame,
-    QPushButton, QLabel, QSizePolicy, QHBoxLayout, QFormLayout, QVBoxLayout
-)
-from pathlib import Path
-from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QFont
-from panel import Panel
 import threading
 import serial
 import time
 import os
 
+from PyQt5.QtWidgets import QGridLayout, QPushButton, QLabel, QHBoxLayout, QVBoxLayout
+from pathlib import Path
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
+from panel import Panel
+
 MAIN_DIR = Path(__file__).parent.parent
-src_dir = MAIN_DIR / "src"
-sys.path.append(str(src_dir))
+ard_dir = MAIN_DIR / "drivers" / "Arduino"
+sys.path.append(str(ard_dir))
 
-from sensors import Sensors
-
+from arduino_driver import Arduino
 
 class ArduinoPanel(Panel):
     def __init__(self, title="Arduino"):
@@ -73,7 +70,6 @@ class ArduinoPanel(Panel):
 
         self.recorder_stop_evt = None
         self.recording_thread = None
-        self.arduino = None
 
         self.log_status = False
         self.log_timestamp = None
@@ -105,7 +101,7 @@ class ArduinoPanel(Panel):
 
         def make_label(text):
             lbl = QLabel(text)
-            lbl.setFont(QFont("Calibri", 15, QFont.Bold))
+            lbl.setFont(QFont("Calibri", 15))
             return lbl
 
         self.ambtemp_lbl = make_label("Ambient Temp: --.-°C")
@@ -142,7 +138,7 @@ class ArduinoPanel(Panel):
         buttons_and_labels.addLayout(button_row)
         buttons_and_labels.addLayout(label_grid)
         self.subgrid.addLayout(buttons_and_labels, 1, 0, 1, 2, alignment=Qt.AlignTop)
-        self.arduino = Sensors("/dev/arduino", baudrate=115200, timeout=1.0)
+        self.arduino = Arduino("/dev/arduino", baudrate=115200, timeout=1.0)
         self.sample_time = 2.5
 
     def start_recording(self):
@@ -249,7 +245,7 @@ class ArduinoPanel(Panel):
                 timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
                 maindir = Path(__file__).parent.parent
 
-                resultdir = maindir / "Sensor Data"
+                resultdir = maindir / "Environmental Data" / "Arduino Data"
                 if not os.path.isdir(resultdir):
                     os.makedirs(resultdir)
 

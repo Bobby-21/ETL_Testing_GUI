@@ -2,7 +2,7 @@ import serial
 import time
 import numpy as np
 
-class Sensors:
+class Arduino:
     def __init__(self, port, baudrate, timeout):
         self.port = port
         self.baud = baudrate

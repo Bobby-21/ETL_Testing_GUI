@@ -11,18 +11,18 @@ from PyQt5.QtGui import QFont
 from panel import Panel
 
 MAIN_DIR = Path(__file__).parent.parent
-hv_dir = MAIN_DIR / "drivers" / "HV"
-sys.path.append(str(hv_dir))
+lv_dir = MAIN_DIR / "drivers" / "LV"
+sys.path.append(str(lv_dir))
 
-from hv_driver import HVPowerSupply
+from lv_driver import LVPowerSupply
 
-class HVPanel(Panel):
-    def __init__(self, title="HV Supply"):
+class LVPanel(Panel):
+    def __init__(self, title="LV Supply"):
         super().__init__(title)
-
-        self.setObjectName("HVPanel")
+        
+        self.setObjectName("LVPanel")
         self.setStyleSheet("""
-        #HVPanel QWidget { color: #ffffff; }
+        #LVPanel QWidget { color: #ffffff; }
         QLabel { color: #ffffff; }
 
         QLineEdit, QPlainTextEdit {
@@ -68,19 +68,19 @@ class HVPanel(Panel):
         QPushButton#blueButton:pressed { background-color: #0056b3; }
         """)
 
-        self.hv_stop_evt = None
-        self.hv_thread = None
+        self.lv_stop_evt = None
+        self.lv_thread = None
         self.log_status = False
         self.log_timestamp = None
 
         self.btn_connect = QPushButton("Connect")
         self.btn_connect.setObjectName("greenButton")
-        self.btn_connect.clicked.connect(self.start_hv)
+        self.btn_connect.clicked.connect(self.start_lv)
         self.btn_connect.setEnabled(True)
 
         self.btn_disconnect = QPushButton("Disconnect")
         self.btn_disconnect.setObjectName("redButton")
-        self.btn_disconnect.clicked.connect(self.stop_hv)
+        self.btn_disconnect.clicked.connect(self.stop_lv)
         self.btn_disconnect.setEnabled(False)
 
         self.lbl_status = QLabel("Disconnected")
@@ -141,7 +141,7 @@ class HVPanel(Panel):
         self.btn_vset.setObjectName("blueButton")
         self.btn_vset.clicked.connect(self.set_voltage)
 
-        self.lbl_set_current_field = make_label("Set Current Limit (uA):" )
+        self.lbl_set_current_field = make_label("Set Current Limit (A):" )
         self.set_current_field = QLineEdit(parent=self)
         self.set_current_field.setFixedSize(60,30)
         self.btn_iset = QPushButton("Set")
@@ -181,37 +181,37 @@ class HVPanel(Panel):
 
 
 
-    def start_hv(self):
-        if self.hv_thread != None:
-            print("HV thread already running")
+    def start_lv(self):
+        if self.lv_thread != None:
+            print("LV thread already running")
             return
         
-        self.hv_stop_evt = threading.Event()
+        self.lv_stop_evt = threading.Event()
         try:
             # TODO: Add more channels
-            self.hv = HVPowerSupply("/dev/hv_supply", baud=9600, bd_addr=0, channel=0)
+            self.lv = LVPowerSupply("/dev/lv_supply", channel=1, baud=115200)
             self.lbl_status.setText("Connected")
         except serial.SerialException as e:
             print(f"Failed to connect: {e}")
         
-        self.hv_stop_evt.clear()
-        self.hv_thread = threading.Thread(target=self.hv_run, daemon=True)
-        self.hv_thread.start()
+        self.lv_stop_evt.clear()
+        self.lv_thread = threading.Thread(target=self.lv_run, daemon=True)
+        self.lv_thread.start()
         self.btn_disconnect.setEnabled(True)
         self.btn_connect.setEnabled(False)
         time.sleep(self.sample_time)
    
-    def stop_hv(self):
-        if self.hv_thread == None:
-            print("HV thread not running")
+    def stop_lv(self):
+        if self.lv_thread == None:
+            print("LV thread not running")
             return
         
-        self.hv_stop_evt.set()
-        if self.hv_thread:
-            self.hv_thread.join()
-            self.hv_thread = None
-        if self.hv:
-            self.hv.close()
+        self.lv_stop_evt.set()
+        if self.lv_thread:
+            self.lv_thread.join()
+            self.lv_thread = None
+        if self.lv:
+            self.lv.close()
             self.lbl_status.setText("Disconnected")
             self.lbl_set_voltage.setText("VSET: --- V")
             self.lbl_set_current.setText("ISET: ---.- uA")
@@ -222,15 +222,15 @@ class HVPanel(Panel):
             self.btn_connect.setEnabled(True)
 
 
-    def hv_run(self):
-        while not self.hv_stop_evt.is_set():
+    def lv_run(self):
+        while not self.lv_stop_evt.is_set():
             if not self.cmd_waiting:
-                self.vset = self.hv.extract_float_value(self.hv.read_vset())
-                self.vmon = self.hv.extract_float_value(self.hv.read_vmon())
-                self.iset = self.hv.extract_float_value(self.hv.read_iset())
-                self.imon = self.hv.extract_float_value(self.hv.read_imon())
-                self.status = int(self.hv.read_status()['VAL'])
-                self.output = self.status & 1
+                self.vset = self.lv.read_vset()
+                self.vmon = self.lv.read_vmon()
+                self.iset = self.lv.read_iset()
+                self.imon = self.lv.read_imon()
+                self.status = self.lv.read_status()
+                self.output = self.status & 2**4
 
                 if self.output:
                     self.lbl_channel.setText("OUTPUT: ON")
@@ -242,20 +242,20 @@ class HVPanel(Panel):
                     self.btn_channel_on.setEnabled(True)
 
                 self.lbl_set_voltage.setText(f"VSET: {self.vset} V")
-                self.lbl_set_current.setText(f"ISET: {self.iset} uA")
+                self.lbl_set_current.setText(f"ISET: {self.iset} A")
                 self.lbl_mon_voltage.setText(f"VMON: {self.vmon} V")
-                self.lbl_mon_current.setText(f"IMON: {self.imon} uA")
+                self.lbl_mon_current.setText(f"IMON: {self.imon} A")
                 if self.log_status:
                     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
                     maindir = Path(__file__).parent.parent
 
-                    resultdir = maindir / "Environmental Data" / "HV Supply Data"
+                    resultdir = maindir / "Environmental Data" / "LV Supply Data"
                     if not os.path.isdir(resultdir):
                         os.makedirs(resultdir)
 
                     resultdir.mkdir(exist_ok=True)
 
-                    outfile = resultdir / f"hv_supply_data_{self.log_timestamp}.csv"
+                    outfile = resultdir / f"LV_supply_data_{self.log_timestamp}.csv"
 
                     data = {"OUTPUT": self.output, "VSET": self.vset, "VMON": self.vmon, "ISET": self.iset, "IMON": self.imon, "Status": self.status}
                     with open(outfile, 'a') as f:
@@ -264,7 +264,7 @@ class HVPanel(Panel):
                 if self.cmd == "vset":
                     try:
                         value = float(self.set_voltage_field.text())
-                        self.hv.set_voltage(value)
+                        self.lv.set_voltage(value)
                     except Exception as e:
                         print(f"Error: {e}")
                         self.set_voltage_field.clear()
@@ -273,17 +273,17 @@ class HVPanel(Panel):
                 elif self.cmd == "iset":
                     try:
                         value = float(self.set_current_field.text())
-                        self.hv.set_current_limit(value)
+                        self.lv.set_current_limit(value)
                     except Exception as e:
                         print(f"Error: {e}")
                         self.set_current_field.clear()
                     self.set_current_field.clear()
 
-                elif self.cmd == "output":
+                elif self.cmd == "channel":
                     if self.output:
-                        self.hv.set_channel_off()
+                        self.lv.set_channel_off()
                     else:
-                        self.hv.set_channel_on()
+                        self.lv.set_channel_on()
                 
                 
                 self.cmd_waiting = False
@@ -300,7 +300,7 @@ class HVPanel(Panel):
     
     def set_channel(self):
         self.cmd_waiting = True
-        self.cmd = "output"
+        self.cmd = "channel"
 
     def toggle_log(self):
         self.log_status = not self.log_status

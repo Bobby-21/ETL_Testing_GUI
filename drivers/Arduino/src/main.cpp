@@ -1,11 +1,13 @@
 #include <Arduino.h>
-#include <DHT20.h>
+// #include <DHT20.h>
 #include <Wire.h>
 #include <PWFusion_MAX31856.h>
 #include <SPI.h>
+#include <DHT.h>
 
-// Declare DHT20 (rH/temp) sensor object
-DHT20 dht;
+// Declare DHT22 (rH/temp) sensor object
+const int DHT22_PIN = 6;
+DHT dht(DHT22_PIN, DHT22);
 
 // Declare thermocouple object (assuming 2 TC probes)
 const int NUM_PROBES = 2;
@@ -81,10 +83,9 @@ void loop() {
         Serial.print(",");
       }
 
-      dht.read();
-      float ambient_temperature = dht.getTemperature();
-      float humidity = dht.getHumidity();
-      bool dhtstatus = dht.isConnected();
+      float ambient_temperature = dht.readTemperature();
+      float humidity = dht.readHumidity();
+      bool dhtstatus = 1;
 
       Serial.print(ambient_temperature);
       Serial.print(",");
@@ -96,8 +97,9 @@ void loop() {
 
     else if (input == "RestartDHT") {
       dht.begin();
-      dht.read();
-      Serial.println(dht.isConnected());
+      dht.readTemperature();
+      dht.readHumidity();
+      Serial.println(1);
     }
 
     else {

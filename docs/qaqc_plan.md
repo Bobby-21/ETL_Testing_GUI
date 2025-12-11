@@ -1,7 +1,7 @@
 # Main Tasks
 1. Move Repo to BU repo
 2. Making our first test: 
-    - Figure out exactly what setup should be checked as the first test that ensures we have connection to the board before continuing
+    - Figure out exactly what setup should be checked as the first test that ensures we have connection to the readout board before continuing
 	- Instantiate `ReadoutBoard` object:
 		- lpgbt (DAQ and Trigger) communication and configuration
 		- MUX64 communication

@@ -1,11 +1,6 @@
-# This will run the tests
 from enum import Enum
 from typing import Literal, Optional
 from module_test_sw.tamalero import ReadoutBoard
-
-
-class TestRoutineState:
-    tests: list[object]
 
 class SetupContext(Enum):
     rb: int
@@ -15,13 +10,15 @@ class SetupContext(Enum):
 
     readout_board: ReadoutBoard
     room_temp_celcius: Optional[int]
+    
+    @property
+    def rb_config(self) -> Literal["modulev2", "rb7_modulev2", "rb6_modulev2"]:
+        ...
 
-    # calculated fields
-    # - rb config -> based off size unless supplied
-    # - module number based off of str
-    # - test_base so like time, module, readout board etc... to merge with the data for pydantic model
+    @property
+    def module_ids(self) -> dict[int, int]:
+        ...
 
-class TestRunner:
-    ...
-
-
+    @property
+    def db_test_base(self) -> dict:
+        ...

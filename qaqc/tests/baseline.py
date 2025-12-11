@@ -1,18 +1,10 @@
-from typing import TYPE_CHECKING
 import numpy as np
-from ..test_runner import SetupContext
-from etlup.tamalero import BaselineV0 as BaselineV0Schema
-
-if TYPE_CHECKING:
-    from .definitions import TestSequenceState 
+from ..test_runner import SetupContext, TestSequenceState
+from etlup.tamalero.Baseline import BaselineV0
 
 from typing import TYPE_CHECKING, Optional
 import numpy as np
 from ..test_runner import SetupContext
-
-if TYPE_CHECKING:
-    # These are expected to be imported or defined in the final file
-    from .definitions import BaselineV0, TestSequenceState 
 
 def run_baseline_test(context: SetupContext, state: "TestSequenceState", config: Optional["BaselineV0"] = None) -> "BaselineV0":
     """
@@ -59,5 +51,4 @@ def run_baseline_test(context: SetupContext, state: "TestSequenceState", config:
     
     # To construct it, we need to import it. But we can't import it at top level.
     # We can import it inside the function.
-    from .definitions import BaselineV0
     return BaselineV0(**data)

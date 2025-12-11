@@ -5,6 +5,7 @@
 # This will run the tests
 from etlup import TestType
 from qaqc.test_registry import TEST_REGISTRY
+from typing_extensions import List
 
 class TestWrapper:
     def __init__(self, test_model: TestType, func):
@@ -30,7 +31,7 @@ class TestSequence:
         seq[0].run()
     """
 
-    def __init__(self, sequence: list[TestType]):
+    def __init__(self, sequence: List[TestType]):
         self.sequence: list = sequence
 
     def __iter__(self):

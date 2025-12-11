@@ -652,7 +652,7 @@ requires-dist = [
     { name = "cocina", git = "https://github.com/danbarto/cocina.git?rev=v1.0.0" },
     { name = "colored", specifier = "==1.4.4" },
     { name = "emoji", specifier = "==2.2.0" },
-    { name = "etlup", specifier = "==4.1.0" },
+    { name = "etlup", specifier = ">=4.1.1" },
     { name = "flask", specifier = "==2.2.5" },
     { name = "gitpython", specifier = "==3.1.29" },
     { name = "hist", specifier = "==2.6.3" },
@@ -676,7 +676,7 @@ requires-dist = [
 
 [[package]]
 name = "etlup"
-version = "4.1.0"
+version = "4.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
@@ -688,9 +688,9 @@ dependencies = [
     { name = "pytz" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/88/1a97a97652b9b667d896e44414b1a8ede5afb0e8ec69252ee798df7931f1/etlup-4.1.0.tar.gz", hash = "sha256:714a39664b74c78fe00d6607b3299cf55c5ed095bb952b678a6613d4105231e7", size = 20015, upload-time = "2025-10-15T13:30:50.687Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/0b/8fb94493a23eef1f5e78211c7d78d0744fd7a7d6ec6396f4dcc9bf0b3404/etlup-4.1.1.tar.gz", hash = "sha256:1dad8c78756e5dc8488b551cd5b4161519de3559fbc0b2b2c8dc08494e3291a1", size = 20042, upload-time = "2025-12-11T13:03:15.276Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/9e/809788e24dc265e45158bd5488ef6698bcd9c38bff573c7e62598b8700b3/etlup-4.1.0-py3-none-any.whl", hash = "sha256:3e272d3fe5a0735b491be430720ec2d9994fa4ce050209aad443946a661dafbc", size = 41665, upload-time = "2025-10-15T13:30:49.298Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/b4/e4a1d1a6045f2be48e166283a99c705491363e8880ffcf5b3338dead0934/etlup-4.1.1-py3-none-any.whl", hash = "sha256:06228651d53e4aff37244bd41d382916fc1a73962e32f99402c87bfa2755fe21", size = 41837, upload-time = "2025-12-11T13:03:13.862Z" },
 ]
 
 [[package]]

@@ -1,12 +1,16 @@
-from enum import Enum
-from typing import Literal, Optional
-from module_test_sw.tamalero import ReadoutBoard
+from dataclasses import dataclass
+from typing import Literal, Optional, Dict
+try:
+    from tamalero.ReadoutBoard import ReadoutBoard
+except ImportError:
+    from module_test_sw.tamalero.ReadoutBoard import ReadoutBoard
 
-class SetupContext(Enum):
+@dataclass
+class SetupContext:
     rb: int
     rb_flavor: Literal[3,6,7]
     rb_serial_number: str
-    modules: dict[int, str] # slot, module serial number -> will need to autogenerate a number based of serial number?
+    modules: Dict[int, str] # slot, module serial number -> will need to autogenerate a number based of serial number?
 
     readout_board: ReadoutBoard
     room_temp_celcius: Optional[int]
@@ -16,9 +20,9 @@ class SetupContext(Enum):
         ...
 
     @property
-    def module_ids(self) -> dict[int, int]:
+    def module_ids(self) -> Dict[int, int]:
         ...
 
     @property
-    def db_test_base(self) -> dict:
+    def db_test_base(self) -> Dict:
         ...

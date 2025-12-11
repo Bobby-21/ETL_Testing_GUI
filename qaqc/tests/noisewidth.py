@@ -1,10 +1,10 @@
 import numpy as np
 from ..setup_context import SetupContext
-from etlup.tamalero.Baseline import BaselineV0
+from etlup.tamalero.Noisewidth import NoisewidthV0
 import numpy as np
 from ..setup_context import SetupContext
 
-def run_baseline_test(context: SetupContext, previous_results: list) -> "BaselineV0":
+def run_noisewidth_test(context: SetupContext, previous_results: list) -> NoisewidthV0:
     """
     Runs the baseline test.
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.
@@ -12,9 +12,9 @@ def run_baseline_test(context: SetupContext, previous_results: list) -> "Baselin
     """
     
     data = {
-        "module": "PBU0001", # Should come from context.modules
+        "module": "PBU0001",
         "version": "v0",
-        "name": "baseline",
+        "name": "noisewidth",
         "measurement_date": "2023-01-01T12:00:00+01:00",
         "location": "BU",
         "user_created": "hayden",
@@ -30,4 +30,4 @@ def run_baseline_test(context: SetupContext, previous_results: list) -> "Baselin
         "pos_3": np.zeros((16, 16)).tolist(),
     }
     
-    return BaselineV0(**data)
+    return NoisewidthV0(**data)

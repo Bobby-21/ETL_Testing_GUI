@@ -6,7 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'module_test_sw'))
 
 from etlup.tamalero import Baseline, Noisewidth
 from qaqc import TestSequence
-from qaqc.setup_context import SetupContext
+from qaqc.setup_config import SetupConfig
 from unittest.mock import MagicMock
 
 def main():
@@ -23,7 +23,7 @@ def main():
     mock_rb = MagicMock()
 
     # Create the context
-    context = SetupContext(
+    context = SetupConfig(
         rb=1,
         rb_flavor=3,
         rb_serial_number="RB_001",

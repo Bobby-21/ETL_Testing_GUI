@@ -1,10 +1,10 @@
 import numpy as np
-from ..setup_context import SetupContext
+from ..setup_config import SetupConfig
 from etlup.tamalero.Noisewidth import NoisewidthV0
 import numpy as np
-from ..setup_context import SetupContext
+from ..setup_config import SetupConfig
 
-def run_noisewidth_test(context: SetupContext, previous_results: list) -> NoisewidthV0:
+def run_noisewidth_test(context: SetupConfig, previous_results: list) -> NoisewidthV0:
     """
     Runs the baseline test.
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.

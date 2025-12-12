@@ -1,10 +1,8 @@
 import numpy as np
-from ..setup_context import SetupContext
+from ..setup_config import SetupConfig
 from etlup.tamalero.Baseline import BaselineV0
-import numpy as np
-from ..setup_context import SetupContext
 
-def run_baseline_test(context: SetupContext, previous_results: list) -> "BaselineV0":
+def run_baseline_test(context: SetupConfig, previous_results: list) -> "BaselineV0":
     """
     Runs the baseline test.
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.

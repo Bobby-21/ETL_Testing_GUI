@@ -1,15 +1,13 @@
-from qaqc.setup_config import SetupConfig
 from qaqc import TestSequence
 from typing_extensions import List
 from etlup import TestType
 from qaqc.errors import FailedTestCriteriaError
-from qaqc.session import global_session as session
+from qaqc.session import Session
 
 class TestRunner:
-    def __init__(self, setup_config: SetupConfig):
-        self.setup_config: SetupConfig = setup_config
-        session.clear()
-        session.setup_config = setup_config
+    def __init__(self, session: Session):
+        self.session = session
+        self.session.clear()
 
     def run_tests(self, test_sequence: List[TestType]):
         """
@@ -20,10 +18,8 @@ class TestRunner:
 
         for test in test_sequence:
             try:
-                test_results = test.run(session)
-                session.test_results[test.model] = test_results
+                results = test.run(self.session)
+                self.session.results[test.model] = results
             except FailedTestCriteriaError as e:
                 print(f"Failed Test: {e}")
-                session.test_results[test.model] = None
-
-        
+                self.session.results[test.model] = None

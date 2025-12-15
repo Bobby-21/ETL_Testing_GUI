@@ -6,7 +6,7 @@
 from etlup import TestType
 from typing_extensions import List
 import functools
-from qaqc.session import global_session as session
+# from qaqc.session import session
 
 TEST_REGISTRY = {}
 
@@ -22,19 +22,19 @@ def register(test_type):
 def required(required_tests: List[TestType]):
     """
     Decorator to ensure that specific tests have passed before running the decorated test.
-    Checks session.test_results dictionary for the required test keys and non-None values.
+    Checks session.results dictionary for the required test keys and non-None values.
     """
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(session_obj, *args, **kwargs):
+        def wrapper(session, *args, **kwargs):
             for req in required_tests:
-                if req not in session_obj.test_results:
+                if req not in session.results:
                     print(f"Skipping {func.__name__}: Required test {req} was not run.")
                     return None
-                if session_obj.test_results[req] is None:
+                if session.results[req] is None:
                     print(f"Skipping {func.__name__}: Required test {req} failed.")
                     return None
-            return func(session_obj, *args, **kwargs)
+            return func(session, *args, **kwargs)
         return wrapper
     return decorator
 
@@ -43,10 +43,10 @@ class TestWrapper:
         self.model = test_model
         self.func = func
 
-    def run(self, session_obj):
+    def run(self, session):
         if self.func is None:
             raise NotImplementedError(f"Test function for {self.model} is not implemented.")
-        return self.func(session_obj)
+        return self.func(session)
 
 
 class TestSequence:

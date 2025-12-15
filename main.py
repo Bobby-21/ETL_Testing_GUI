@@ -5,12 +5,12 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'module_test_sw'))
 
 from etlup.tamalero import Baseline, Noisewidth
-from qaqc.setup_config import SetupConfig
+from qaqc.session import Session
 from qaqc.test_runner import TestRunner
 
 def main():
-    # Create the context
-    context = SetupConfig(
+    # Create the session with configuration
+    session = Session(
         rb=1,
         rb_flavor=3,
         rb_serial_number="RB_001",
@@ -19,15 +19,16 @@ def main():
         room_temp_celcius=25
     )
 
-    # Initialize TestRunner
-    runner = TestRunner(context)
+    # Initialize TestRunner with the session
+    runner = TestRunner(session)
 
     # Define the sequence of tests
     my_tests_sequence = [
-        # "ReadoutBoardConnectionV0",
+        "ReadoutBoardConnectionV0",
         Baseline.BaselineV0,
         Noisewidth.NoisewidthV0
     ]
+
 
     # Run the tests
     print("Starting test sequence...")

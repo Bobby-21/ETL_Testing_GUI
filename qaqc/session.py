@@ -43,7 +43,7 @@ class Session:
 
     @property
     def active_slots(self) -> List[int]:
-        return [i for i in range(self.modules) if self.modules[i] is not None]
+        return [i for i in range(len(self.modules)) if self.modules[i] is not None]
 
     @property
     def rb_config(self) -> Literal["modulev2", "rb7_modulev2", "rb6_modulev2"]:

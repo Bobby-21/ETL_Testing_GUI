@@ -9,7 +9,7 @@ class TestRunner:
         self.session = session
         self.session.clear()
 
-    def run_test_sequence(self, test_sequence: List[TestType], slot: int) -> None:
+    def iter_test_sequence(self, test_sequence: List[TestType], slot: int):
         """
         On a particular slot of the Readout Board, execute the inputted test_sequence.
 
@@ -25,7 +25,7 @@ class TestRunner:
             try:
                 results = test.run(self.session)
                 session_results[test.model] = results
+                yield test, results
             except FailedTestCriteriaError as e:
-                print(f"Failed Test: {e}")
                 session_results[test.model] = None
-            
+                yield test, e

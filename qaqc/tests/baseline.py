@@ -12,7 +12,6 @@ def baseline_test(session) -> BaselineV0:
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.
     Returns a fully populated BaselineV0 instance.
     """
-    # raise FailedTestCriteriaError("shit something failed")
     data = {
         "module": "PBU0001", # Should come from context.modules
         "version": "v0",

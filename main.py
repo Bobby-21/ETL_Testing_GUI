@@ -11,7 +11,7 @@ from qaqc.test_runner import TestRunner
 def main():
     # Create the session with configuration
     session = Session(
-        rb=1,
+        rb=0,
         rb_size=3,
         rb_serial_number="RB_001",
         modules=["MOD_A", None, "MOD_B"],
@@ -23,14 +23,18 @@ def main():
 
     # Define the sequence of tests
     my_tests_sequence = [
-        "ReadoutBoardConnectionV0",
+        # "ReadoutBoardConnectionV0",
         Baseline.BaselineV0,
         Noisewidth.NoisewidthV0
     ]
 
     # Run the tests
     print("Starting test sequence...")
-    runner.run_test_sequence(my_tests_sequence, slot=0)
+    for test, result in runner.iter_test_sequence(my_tests_sequence, slot=0):
+        if isinstance(result, Exception):
+            print(f"Test {test.model} failed: {result}")
+        else:
+            print(f"Test {test.model} passed")
     print("Test sequence completed.")
 
 if __name__ == "__main__":

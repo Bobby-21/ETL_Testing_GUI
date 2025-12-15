@@ -5,7 +5,7 @@ from qaqc.errors import FailedTestCriteriaError
 from typing_extensions import Dict, List
 
 @register(BaselineV0)
-@required(["ReadoutBoardConnectionV0"])
+@required([])
 def baseline_test(session) -> BaselineV0:
     """
     Runs the baseline test.

@@ -36,6 +36,7 @@ def main():
         else:
             print(f"Test {test.model} passed")
     print("Test sequence completed.")
+    print(session.results)
 
 if __name__ == "__main__":
     main()

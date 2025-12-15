@@ -1,7 +1,9 @@
 import numpy as np
 from ..setup_config import SetupConfig
 from etlup.tamalero.Baseline import BaselineV0
+from qaqc import register
 
+@register(BaselineV0)
 def run_baseline_test(context: SetupConfig, previous_results: list) -> "BaselineV0":
     """
     Runs the baseline test.

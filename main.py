@@ -28,7 +28,8 @@ def main():
         rb_flavor=3,
         rb_serial_number="RB_001",
         modules={1: "MOD_A", 2: "MOD_B"},
-        readout_board=mock_rb,
+        kcu_ipaddress="192.168.0.10",
+        # readout_board=mock_rb,
         room_temp_celcius=25
     )
 

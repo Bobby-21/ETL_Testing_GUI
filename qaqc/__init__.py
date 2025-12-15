@@ -4,8 +4,18 @@
 
 # This will run the tests
 from etlup import TestType
-from qaqc.test_registry import TEST_REGISTRY
 from typing_extensions import List
+
+TEST_REGISTRY = {}
+
+def register(test_type):
+    """
+    Decorator to register a function as a handler for a specific TestType.
+    """
+    def decorator(func):
+        TEST_REGISTRY[test_type] = func
+        return func
+    return decorator
 
 class TestWrapper:
     def __init__(self, test_model: TestType, func):
@@ -20,7 +30,7 @@ class TestWrapper:
 class TestSequence:
     """
     A user friendly common interface between the test sequences defined in etlup and the test functions defined in qaqc/tests. 
-    Mapping between the etlup test models and the functions is done in the test_registry.py module.
+    Mapping between the etlup test models and the functions is done via the @register decorator in qaqc/__init__.py.
  
     Usage:
         seq = TestSequence([BaselineV0, NoisewidthV0])
@@ -41,3 +51,5 @@ class TestSequence:
     def __getitem__(self, index):
         test = self.sequence[index]
         return TestWrapper(test, TEST_REGISTRY.get(test))
+
+import qaqc.tests # Ensure tests are registered

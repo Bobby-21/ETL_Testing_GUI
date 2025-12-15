@@ -64,7 +64,8 @@ class Session:
         Tamalero requires a numerical number when instantiating.
         Will probably just take the numerical part of the serial number.
         """
-        ...
+        # TODO: make this actually use the module numbers?
+        return [i+100 for i in range(self.rb_size)]
 
     def db_test_base(self, slot: int) -> Dict:
         """

@@ -5,7 +5,7 @@ from etlup.tamalero import Baseline
 from typing_extensions import List
 
 @register(NoisewidthV0)
-@required([Baseline.BaselineV0])
+@required(["ReadoutBoardConnectionV0", Baseline.BaselineV0])
 def noisewidth_test(session) -> NoisewidthV0:
     """
     Runs the baseline test.

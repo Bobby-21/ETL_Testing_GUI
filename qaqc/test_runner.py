@@ -18,7 +18,8 @@ class TestRunner:
         """
         if not slot in self.session.active_slots:
             raise ValueError(f"This slot was configured to not be tested. Configured modules: {self.session.modules}")
-
+        self.session.current_base_data = None # drop any current base data
+        
         session_results = self.session.results[slot]
         test_sequence = TestSequence(test_sequence)
 

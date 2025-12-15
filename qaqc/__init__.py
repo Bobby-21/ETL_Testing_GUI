@@ -6,6 +6,7 @@
 from etlup import TestType
 from typing_extensions import List
 import functools
+from qaqc.errors import MissingRequiredTestError
 # from qaqc.session import session
 
 TEST_REGISTRY = {}
@@ -22,18 +23,13 @@ def register(test_type):
 def required(required_tests: List[TestType]):
     """
     Decorator to ensure that specific tests have passed before running the decorated test.
-    Checks session.results dictionary for the required test keys and non-None values.
     """
     def decorator(func):
         @functools.wraps(func)
         def wrapper(session, *args, **kwargs):
             for req in required_tests:
                 if req not in session.results:
-                    print(f"Skipping {func.__name__}: Required test {req} was not run.")
-                    return None
-                if session.results[req] is None:
-                    print(f"Skipping {func.__name__}: Required test {req} failed.")
-                    return None
+                    raise MissingRequiredTestError(f"Required test {req} was not run for {func.__name__}.")
             return func(session, *args, **kwargs)
         return wrapper
     return decorator

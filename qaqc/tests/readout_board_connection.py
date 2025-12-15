@@ -25,4 +25,8 @@ def readout_board_connection_test(session):
         verbose = True
     )
     
-    return "Connected"
+    return {
+        "daq_lpgbt": True,
+        "mux64": True,
+        "trig_lpgbt": True
+    }

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Dict, Any, Literal, List, Tuple
+from typing import Optional, Dict, Any, Literal, List
 from module_test_sw.tamalero.KCU import KCU
 from module_test_sw.tamalero.ReadoutBoard import ReadoutBoard
 
@@ -24,6 +24,8 @@ class Session:
         rb_size: Literal[3,6,7],
         rb_serial_number: str,
         modules: List[str],
+        location: str = "Fermilab",
+        user_created: str = "unknown",
         room_temp_celcius: Optional[int] = None
     ):
         # Config variables
@@ -32,6 +34,8 @@ class Session:
         self.rb_size: int = rb_size
         self.rb_serial_number = rb_serial_number
         self.modules: RbSizeTuple = RbSizeTuple(modules, size=rb_size)
+        self.location = location
+        self.user_created = user_created
         self.room_temp_celcius: float = room_temp_celcius
 
         # Session state
@@ -40,6 +44,8 @@ class Session:
         self.results: RbSizeTuple[Dict[Any,Any]] = RbSizeTuple(
             [{} for _ in range(self.rb_size)], 
             size=self.rb_size)
+
+        self.current_base_data: dict = None # current base data for pydantic etlup modules
 
     @property
     def active_slots(self) -> List[int]:
@@ -67,14 +73,10 @@ class Session:
         # TODO: make this actually use the module numbers?
         return [i+100 for i in range(self.rb_size)]
 
-    def db_test_base(self, slot: int) -> Dict:
-        """
-        A dictionary of all the information in SetupConfig for the upload of a test of a module
-        """
-
     def clear(self):
         self.kcu = None
         self.readout_board = None
         self.results = RbSizeTuple(
             [{} for _ in range(self.rb_size)], 
             size=self.rb_size)
+        self.current_base_data = None

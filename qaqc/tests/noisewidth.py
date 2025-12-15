@@ -12,13 +12,7 @@ def noisewidth_test(session) -> NoisewidthV0:
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.
     Returns a fully populated BaselineV0 instance.
     """    
-    data = {
-        "module": "PBU0001",
-        "version": "v0",
-        "name": "noisewidth",
-        "measurement_date": "2023-01-01T12:00:00+01:00",
-        "location": "BU",
-        "user_created": "hayden",
+    data = session.current_base_data | {
         'ambient_celcius': 20,
         "etroc_0_Vtemp": 2713,
         "etroc_1_Vtemp": 2713,
@@ -28,7 +22,7 @@ def noisewidth_test(session) -> NoisewidthV0:
         "pos_0": np.zeros((16, 16)).tolist(),
         "pos_1": np.zeros((16, 16)).tolist(),
         "pos_2": np.zeros((16, 16)).tolist(),
-        "pos_3": np.zeros((16, 16)).tolist(),
+        "pos_3": np.zeros((16, 16)).tolist()
     }
     
     return NoisewidthV0(**data)

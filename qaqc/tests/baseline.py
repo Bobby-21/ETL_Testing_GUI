@@ -12,13 +12,7 @@ def baseline_test(session) -> BaselineV0:
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.
     Returns a fully populated BaselineV0 instance.
     """
-    data = {
-        "module": "PBU0001", # Should come from context.modules
-        "version": "v0",
-        "name": "baseline",
-        "measurement_date": "2023-01-01T12:00:00+01:00",
-        "location": "BU",
-        "user_created": "hayden",
+    data = session.current_base_data | {
         'ambient_celcius': 20,
         "etroc_0_Vtemp": 2713,
         "etroc_1_Vtemp": 2713,

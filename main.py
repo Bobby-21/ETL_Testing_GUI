@@ -12,13 +12,12 @@ def main():
     # Create the session with configuration
     session = Session(
         rb=1,
-        rb_flavor=3,
+        rb_size=3,
         rb_serial_number="RB_001",
-        modules={1: "MOD_A", 2: "MOD_B"},
+        modules=["MOD_A", None, "MOD_B"],
         kcu_ipaddress="192.168.0.10",
         room_temp_celcius=25
     )
-
     # Initialize TestRunner with the session
     runner = TestRunner(session)
 
@@ -29,10 +28,9 @@ def main():
         Noisewidth.NoisewidthV0
     ]
 
-
     # Run the tests
     print("Starting test sequence...")
-    runner.run_tests(my_tests_sequence)
+    runner.run_test_sequence(my_tests_sequence, slot=0)
     print("Test sequence completed.")
 
 if __name__ == "__main__":

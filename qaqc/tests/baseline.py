@@ -2,17 +2,16 @@ import numpy as np
 from etlup.tamalero.Baseline import BaselineV0
 from qaqc import register, required
 from qaqc.errors import FailedTestCriteriaError
-from typing_extensions import Dict
+from typing_extensions import Dict, List
 
 @register(BaselineV0)
 @required(["ReadoutBoardConnectionV0"])
-def baseline_test(session) -> "BaselineV0":
+def baseline_test(session) -> BaselineV0:
     """
     Runs the baseline test.
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.
     Returns a fully populated BaselineV0 instance.
     """
-    context = session
     # raise FailedTestCriteriaError("shit something failed")
     data = {
         "module": "PBU0001", # Should come from context.modules

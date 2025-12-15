@@ -2,6 +2,7 @@ import numpy as np
 from etlup.tamalero.Noisewidth import NoisewidthV0
 from qaqc import register, required
 from etlup.tamalero import Baseline
+from typing_extensions import List
 
 @register(NoisewidthV0)
 @required(["ReadoutBoardConnectionV0", Baseline.BaselineV0])

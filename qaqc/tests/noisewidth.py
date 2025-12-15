@@ -3,15 +3,17 @@ from ..setup_config import SetupConfig
 from etlup.tamalero.Noisewidth import NoisewidthV0
 from qaqc import register, required
 from etlup.tamalero import Baseline
+from typing_extensions import Dict
 
 @register(NoisewidthV0)
 @required([Baseline.BaselineV0])
-def run_noisewidth_test(context: SetupConfig, previous_results: list) -> NoisewidthV0:
+def noisewidth_test(session_obj) -> NoisewidthV0:
     """
     Runs the baseline test.
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.
     Returns a fully populated BaselineV0 instance.
     """
+    context = session_obj.setup_config
     
     data = {
         "module": "PBU0001",

@@ -24,7 +24,8 @@ def main():
 
     # Define the sequence of tests
     my_tests_sequence = [
-        # Baseline.BaselineV0,
+        # "ReadoutBoardConnectionV0",
+        Baseline.BaselineV0,
         Noisewidth.NoisewidthV0
     ]
 

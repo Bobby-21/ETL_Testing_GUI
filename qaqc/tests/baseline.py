@@ -1,17 +1,20 @@
 import numpy as np
 from ..setup_config import SetupConfig
 from etlup.tamalero.Baseline import BaselineV0
-from qaqc import register
+from qaqc import register, required
 from qaqc.errors import FailedTestCriteriaError
 from typing_extensions import Dict
+
 @register(BaselineV0)
-def run_baseline_test(context: SetupConfig, previous_results: Dict) -> "BaselineV0":
+@required([])
+def baseline_test(session_obj) -> "BaselineV0":
     """
     Runs the baseline test.
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.
     Returns a fully populated BaselineV0 instance.
     """
-    raise FailedTestCriteriaError("shit something failed")
+    context = session_obj.setup_config
+    # raise FailedTestCriteriaError("shit something failed")
     data = {
         "module": "PBU0001", # Should come from context.modules
         "version": "v0",

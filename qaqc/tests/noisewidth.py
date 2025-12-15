@@ -1,9 +1,11 @@
 import numpy as np
 from ..setup_config import SetupConfig
 from etlup.tamalero.Noisewidth import NoisewidthV0
-from qaqc import register
+from qaqc import register, required
+from etlup.tamalero import Baseline
 
 @register(NoisewidthV0)
+@required([Baseline.BaselineV0])
 def run_noisewidth_test(context: SetupConfig, previous_results: list) -> NoisewidthV0:
     """
     Runs the baseline test.

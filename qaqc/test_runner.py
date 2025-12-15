@@ -1,7 +1,11 @@
 from module_test_sw.tamalero.ReadoutBoard import ReadoutBoard
 from module_test_sw.tamalero.KCU import KCU
 from module_test_sw.tamalero.utils import get_kcu
-from setup_config import SetupConfig
+from qaqc.setup_config import SetupConfig
+from qaqc import TestSequence
+from typing_extensions import List
+from etlup import TestType
+from qaqc.errors import FailedTestCriteriaError
 
 class TestRunner:
     def __init__(self, setup_config: SetupConfig):
@@ -30,5 +34,23 @@ class TestRunner:
             verbose = True
         )
 
-    def run_tests(self, test_sequence):
-        ...
+    def run_tests(self, test_sequence: List[TestType]):
+        """
+        Executes each test in the sequence, in order, passing if any fail.
+        """
+
+        test_sequence = TestSequence(test_sequence)
+        test_report = {}
+
+        for test in test_sequence:
+            try:
+                test_results = test.run(
+                    self.setup_config, 
+                    test_report
+                )
+                test_report[test.model] = test_results
+            except FailedTestCriteriaError as e:
+                print(f"Failed Test: {e}")
+                test_report[test.model] = None
+
+        

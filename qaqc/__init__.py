@@ -5,6 +5,7 @@
 # This will run the tests
 from etlup import TestType
 from typing_extensions import List
+import functools
 
 TEST_REGISTRY = {}
 
@@ -15,6 +16,25 @@ def register(test_type):
     def decorator(func):
         TEST_REGISTRY[test_type] = func
         return func
+    return decorator
+
+def required(required_tests: List[TestType]):
+    """
+    Decorator to ensure that specific tests have passed before running the decorated test.
+    Checks previous_results dictionary for the required test keys and non-None values.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(context, previous_results, *args, **kwargs):
+            for req in required_tests:
+                if req not in previous_results:
+                    print(f"Skipping {func.__name__}: Required test {req} was not run.")
+                    return None
+                if previous_results[req] is None:
+                    print(f"Skipping {func.__name__}: Required test {req} failed.")
+                    return None
+            return func(context, previous_results, *args, **kwargs)
+        return wrapper
     return decorator
 
 class TestWrapper:

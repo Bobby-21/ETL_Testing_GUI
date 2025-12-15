@@ -5,23 +5,10 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'module_test_sw'))
 
 from etlup.tamalero import Baseline, Noisewidth
-from qaqc import TestSequence
 from qaqc.setup_config import SetupConfig
-from unittest.mock import MagicMock
+from qaqc.test_runner import TestRunner
 
 def main():
-    # Define the sequence of tests
-    my_tests_sequence = [
-        Baseline.BaselineV0,
-        Noisewidth.NoisewidthV0
-    ]
-
-    # Create the TestSequence object
-    test_seq = TestSequence(my_tests_sequence)
-
-    # Mock ReadoutBoard for this example
-    mock_rb = MagicMock()
-
     # Create the context
     context = SetupConfig(
         rb=1,
@@ -29,23 +16,21 @@ def main():
         rb_serial_number="RB_001",
         modules={1: "MOD_A", 2: "MOD_B"},
         kcu_ipaddress="192.168.0.10",
-        # readout_board=mock_rb,
         room_temp_celcius=25
     )
 
-    previous_results = []
+    # Initialize TestRunner
+    runner = TestRunner(context)
 
-    # Iterate and run each test
+    # Define the sequence of tests
+    my_tests_sequence = [
+        # Baseline.BaselineV0,
+        Noisewidth.NoisewidthV0
+    ]
+
+    # Run the tests
     print("Starting test sequence...")
-    for t in test_seq:
-        print(f"Running test: {t.model}")
-        # Pass context and previous_results to the test function
-        result = t.run(
-            context=context, 
-            previous_results=previous_results)
-        previous_results.append(result)
-        print(f"Test {t.model} completed. Result: {result}")
-    
+    runner.run_tests(my_tests_sequence)
     print("Test sequence completed.")
 
 if __name__ == "__main__":

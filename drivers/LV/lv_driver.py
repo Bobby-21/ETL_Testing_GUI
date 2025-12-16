@@ -40,10 +40,10 @@ class LVPowerSupply():
 
 
     def set_voltage(self, voltage):
-        response = self.send_command(f"CH{self.channel}: VOLT {voltage}")
+        response = self.send_command(f"CH{self.channel}:VOLT {voltage}")
     
     def set_current_limit(self, current):
-        response = self.send_command(f"CH{self.channel}: CURR {current}")
+        response = self.send_command(f"CH{self.channel}:CURR {current}")
     
     def set_channel_on(self):
         response = self.send_command(f"OUTP CH{self.channel},ON")
@@ -52,26 +52,26 @@ class LVPowerSupply():
         response = self.send_command(f"OUTP CH{self.channel},OFF")
     
     def read_vset(self):
-        response = self.send_command(f"CH{self.channel}: VOLT?").strip()
+        response = self.send_command(f"CH{self.channel}:VOLT?").strip()
         return float(response)
     
     def read_vmon(self):
-        response = self.send_command(f"MEAS: VOLT? CH{self.channel}").strip()
+        response = self.send_command(f"MEAS:VOLT? CH{self.channel}").strip()
         return float(response)
         
     def read_iset(self):
-        response = self.send_command(f"CH{self.channel}: CURR?").strip()
+        response = self.send_command(f"CH{self.channel}:CURR?").strip()
         return float(response)
     
     def read_imon(self):
-        response = self.send_command(f"MEAS: CURR? CH{self.channel}").strip()
+        response = self.send_command(f"MEAS:CURR? CH{self.channel}").strip()
         return float(response)
     
     def read_power(self):
-        response = self.send_command(f"MEAS: POWE? CH{self.channel}").strip()
+        response = self.send_command(f"MEAS:POWE? CH{self.channel}").strip()
         return float(response)
     
     def read_status(self):
         response = self.send_command("SYST:STAT?").strip()
-        return int(response)
+        return int(response, 16)
     

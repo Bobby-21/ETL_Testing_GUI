@@ -1,41 +1,55 @@
-import serial
+import socket
 
 class LVPowerSupply():
-    def __init__(self, port, channel, baud=115200):
-        self.port = port
-        self.baud = baud
+    def __init__(self, ip, channel, tcp_port=5025, timeout=1.0):
+        self.ip = ip
+        self.tcp_port = tcp_port
         self.channel = channel
-        self.ser = serial.Serial(self.port, self.baud, timeout=1)
-        self.flush_input_buffer()
+        self.timeout = timeout
+        self.sock = None
+        self.connect()
+
+    def connect(self):
+        if self.sock is None:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.settimeout(self.timeout)
+            self.sock.connect((self.ip, self.tcp_port))
 
     def close(self):
-        if self.ser != None:
-            self.ser.close()
+        if self.sock is not None:
+            self.sock.close()
+            self.sock = None
 
     def send_command(self, cmd):
-        if self.ser and self.ser.is_open:
-            self.ser.reset_input_buffer()
-            self.ser.write((f"{cmd}\n").encode())
-            self.ser.flush()
-            line = self.ser.readline().decode()
-            return line
-        else:
-            raise RuntimeError("Serial not open, call connect() first")
-    
-    def flush_input_buffer(self):
-        self.ser.flushInput()
+        self.sock.sendall((cmd + '\n').encode())
+        if "?" not in cmd:
+            response = None
+            return response
+        
+        response = ""
+        while True:
+            chunk = self.sock.recv(1)
+            if not chunk:
+                break
+            chunk = chunk.decode()
+            response += chunk
+            if '\n' in chunk:
+                break
+
+        return response
+
 
     def set_voltage(self, voltage):
-        response = self.send_command(f"CH{self.channel}: VOLT {voltage}").strip()
+        response = self.send_command(f"CH{self.channel}: VOLT {voltage}")
     
     def set_current_limit(self, current):
-        response = self.send_command(f"CH{self.channel}: CURR {current}").strip()
+        response = self.send_command(f"CH{self.channel}: CURR {current}")
     
     def set_channel_on(self):
-        response = self.send_command(f"OUTP CH{self.channel},ON").strip()
+        response = self.send_command(f"OUTP CH{self.channel},ON")
     
     def set_channel_off(self):
-        response = self.send_command(f"OUTP CH{self.channel},OFF").strip()
+        response = self.send_command(f"OUTP CH{self.channel},OFF")
     
     def read_vset(self):
         response = self.send_command(f"CH{self.channel}: VOLT?").strip()
@@ -60,3 +74,4 @@ class LVPowerSupply():
     def read_status(self):
         response = self.send_command("SYST:STAT?").strip()
         return int(response)
+    

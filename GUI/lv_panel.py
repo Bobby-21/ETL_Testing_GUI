@@ -189,7 +189,7 @@ class LVPanel(Panel):
         self.lv_stop_evt = threading.Event()
         try:
             # TODO: Add more channels
-            self.lv = LVPowerSupply("/dev/lv_supply", channel=1, baud=115200)
+            self.lv = LVPowerSupply("192.168.0.30", channel=1)
             self.lbl_status.setText("Connected")
         except serial.SerialException as e:
             print(f"Failed to connect: {e}")

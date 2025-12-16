@@ -42,7 +42,7 @@ Highlights
     - `etlup` will also have predefined test sequences to be compatable with the database
 - `session.iter_test_sequence(my_tests_sequence, slot=0)` allows you to loop throgh and executes each test in the sequence on a particular slot of the readout board
     - it stores the results in the session
-        - `session.results` is a tuple of dictionaries, each dictionary corresponds to the test on a particular module. Keys are the pydantic model and the value is the data (instantiated pydantic model) 
+        - `session.results` is a tuple of dictionaries, one for each slot on the readout baord. Each dictionary holds all the tests results on a particular module in that slot. Keys are the pydantic model and the value is the data (instantiated pydantic model) in the dictionary unless it fails then the value is None.
     - tells you if a test has failed
 
 ## Making a new Test

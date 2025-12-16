@@ -15,8 +15,9 @@ This Python GUI facilitates coldbox testing of ETL detector modules.
     - [Thermocouple SPI digital interface](https://www.playingwithfusion.com/productview.php?catid=1001&pdid=64)
 - Xilinx KCU105 FPGA Board
 - CAEN NDT1470 high-voltage power supply
-- Low voltage power supply
+- SIGLENT SPD3303X-E low-voltage power supply
 - Coldbox (see coldbox setup below)
+
 
 ### Software
 - OS: Ubuntu 20.04.1

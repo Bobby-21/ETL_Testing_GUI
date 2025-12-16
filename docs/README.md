@@ -61,6 +61,7 @@ Move to the `scripts/` directory and run `source setup_env.sh`. This does the fo
 - Installs Xilinx cable drivers
 
 ### Flashing firmware
+You can follow the directions here on the [rbdocs](https://etl-rb.docs.cern.ch/Firmware/rb-firmware/#firmware-for-kcu-105)
 
 ## User's Guide
 

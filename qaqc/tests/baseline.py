@@ -2,18 +2,18 @@ import numpy as np
 from etlup.tamalero.Baseline import BaselineV0
 from qaqc import register, required
 from qaqc.errors import FailedTestCriteriaError
-from typing_extensions import Dict, List
+from qaqc.session import Session
 
 @register(BaselineV0)
-@required(["ReadoutBoardConnectionV0"])
-def baseline_test(session) -> BaselineV0:
+@required(["ReadoutBoardCommunicationV0"])
+def test(session: Session) -> BaselineV0:
     """
     Runs the baseline test.
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.
     Returns a fully populated BaselineV0 instance.
     """
     data = session.current_base_data | {
-        'ambient_celcius': 20,
+        'ambient_celcius': session.room_temp_celcius,
         "etroc_0_Vtemp": 2713,
         "etroc_1_Vtemp": 2713,
         "etroc_2_Vtemp": 2713,

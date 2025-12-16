@@ -2,11 +2,10 @@ import numpy as np
 from etlup.tamalero.Noisewidth import NoisewidthV0
 from qaqc import register, required
 from etlup.tamalero import Baseline
-from typing_extensions import List
 
 @register(NoisewidthV0)
-@required(["ReadoutBoardConnectionV0", Baseline.BaselineV0])
-def noisewidth_test(session) -> NoisewidthV0:
+@required(["ReadoutBoardCommunicationV0", Baseline.BaselineV0])
+def test(session) -> NoisewidthV0:
     """
     Runs the baseline test.
     If 'config' is provided (from TestSequence), it uses it as a base/configuration.

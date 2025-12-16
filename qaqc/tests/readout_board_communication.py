@@ -22,7 +22,7 @@ def test(session):
         print("Connecting to Readout Board...")
         session.readout_board = ReadoutBoard(
             rb      = session.rb, 
-            servantger = True, 
+            trigger = True, 
             kcu     = session.kcu, 
             config  = session.rb_config, 
             verbose = True
@@ -54,7 +54,7 @@ def test(session):
     except Exception as e:
         raise FailedTestCriteriaError(str(e))
         
-    return {
+    data = {
         "master_lpgbt_read": True,
         "master_lpgbt_write": True,
         "mux64_read": True,
@@ -62,3 +62,5 @@ def test(session):
         "servant_lpgbt_read": True,
         "servant_lpgbt_write": True
     }
+
+    return ReadoutBoardCommunicationV0(**session.current_base_data, **data)

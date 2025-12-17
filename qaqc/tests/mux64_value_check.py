@@ -1,9 +1,6 @@
-from module_test_sw.tamalero.ReadoutBoard import ReadoutBoard
-from module_test_sw.tamalero.utils import get_kcu
-from qaqc.tests.configs.MUX64Values import MUX64ValuesV0
 from qaqc import register, required
 from qaqc.errors import FailedTestCriteriaError
-from etlup.tamalero.ReadoutBoardCommunication import ReadoutBoardCommunicationV0
+from etlup.tamalero.MUX64Values import MUX64ValuesV0
 import yaml
 from pathlib import Path
 
